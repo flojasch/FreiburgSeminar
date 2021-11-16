@@ -1,0 +1,18 @@
+h1,h2,p {
+    margin-left: 1cm;
+    color: #252946;
+    /* text-align: center; */
+    font-family: "Arial";
+}
+p {
+    font-weight: bold
+}
+input {
+    margin-left: 2cm;
+}
+
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
