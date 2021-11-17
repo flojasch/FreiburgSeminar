@@ -14,7 +14,7 @@ const mov = {
 const player = {
   x: 0,
   y: 0,
-  z: -10,
+  z: -500,
   X: {
     x: 1,
     y: 0,
@@ -117,10 +117,10 @@ function movePlayer(move) {
     player.Y = rot(player.Y, player.Z, ang);
   }
   if (move.forward) {
-    newPos(0.03, player);
+    newPos(1, player);
   }
   if (move.backward) {
-    newPos(-0.03, player);
+    newPos(-1, player);
   }
 
   function newPos(incr, p) {
