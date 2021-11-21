@@ -101,6 +101,39 @@ class Planet {
   }
 }
 
+class Projectile{
+  constructor(dir){
+    this.dir=dir;
+    const material=new THREE.MeshBasicMaterial({color: 0xff00ff});
+    const geometry=new THREE.CylinderGeometry(0.02,0.02,2,10);
+    const cyl1=new THREE.Mesh(geometry,material);
+    cyl1.rotation.x = -Math.PI / 2;
+    cyl1.position.set(-1, -0.7 , 2.5);
+    const cyl2=new THREE.Mesh(geometry,material);
+    cyl2.rotation.x = -Math.PI / 2;
+    cyl2.position.set(1, -0.7 , 2.5);
+    const cyl3=new THREE.Mesh(geometry,material);
+    cyl3.rotation.x = -Math.PI / 2;
+    cyl3.position.set(-1, -1.3 , 2.5);
+    const cyl4=new THREE.Mesh(geometry,material);
+    cyl4.rotation.x = -Math.PI / 2;
+    cyl4.position.set(1, -1.3 , 2.5);
+    this.obj=new THREE.Object3D();
+    this.obj.add(cyl1);
+    this.obj.add(cyl2);
+    this.obj.add(cyl3);
+    this.obj.add(cyl4);
+    scene.add(this.obj);
+    setObject(this.obj);
+  }
+  update(){
+    this.obj.position.x +=this.dir.x;
+    this.obj.position.y +=this.dir.y;
+    this.obj.position.z +=this.dir.z;
+  }
+
+}
+
 const objects = [];
 const sun = new Planet(0, 0, 0, 50, 0.25, 'sun.jpg', true, 'sun');
 objects.push(sun);
@@ -137,10 +170,16 @@ function setObject(obj) {
 
 const tempV = new THREE.Vector3();
 camera.position.z=1;
+const projectiles=[];
 
 function render(time) {
   time *= 0.001;
   movePlayer(mov);
+  if(mov.fire){
+    const dir=new THREE.Vector3(player.Z.x,player.Z.y,player.Z.z);
+    projectiles.push(new Projectile(dir));
+    mov.fire=false;
+  }
   setObject(camera);
   setObject(xWing);
 
@@ -156,13 +195,13 @@ function render(time) {
     const elem = planet.info;
     planet.obj.getWorldPosition(tempV);
     tempV.project(camera);
-    console.log(tempV);
 
     const x = (tempV.x * .5 + .5) * canvas.clientWidth;
     const y = (tempV.y * -.5 + .5) * canvas.clientHeight;
     elem.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
   });
 
+  projectiles.forEach(proj=>{proj.update()});
   renderer.render(scene, camera);
 
   requestAnimationFrame(render);

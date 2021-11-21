@@ -10,6 +10,7 @@ const mov = {
   tright: false,
   forward: false,
   backward: false,
+  fire: false,
 }
 const player = {
   x: 0,
@@ -58,6 +59,10 @@ function keyDownHandler(event) {
     case 83: //s
       mov.backward = true;
       break;
+    case 32: //space
+      mov.fire = true;
+      break;
+
   }
 }
 
@@ -86,6 +91,9 @@ function keyUpHandler(event) {
       break;
     case 83: //s
       mov.backward = false;
+      break;
+    case 32: //space
+      mov.fire = false;
       break;
   }
 }

@@ -25,6 +25,7 @@ html, body {
   top: 0;
   cursor: pointer;     /* change the cursor to a hand when over us */
   font-size: small;
+  font-family: 'Brush Script MT', cursive;
   user-select: none;   /* don't let the text get selected */
   text-shadow:         /* create a black outline */
   -1px -1px 0 #000,
