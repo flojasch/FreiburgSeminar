@@ -2,7 +2,9 @@ import * as THREE from "https://threejsfundamentals.org/threejs/resources/threej
 import {
   OBJLoader
 } from 'https://threejsfundamentals.org/threejs/resources/threejs/r132/examples/jsm/loaders/OBJLoader.js';
-
+import {
+  GLTFLoader
+} from 'https://threejsfundamentals.org/threejs/resources/threejs/r132/examples/jsm/loaders/GLTFLoader.js';
 
 const canvas = document.querySelector("#c");
 const labelContainerElem = document.querySelector('#labels');
@@ -42,6 +44,7 @@ const texture = loader.load(
 
 const objLoader = new OBJLoader();
 const xWing = new THREE.Object3D();
+const xWingFrame = new THREE.Object3D();
 
 const metall = new THREE.MeshStandardMaterial({
   color: 0x3377ff,
@@ -50,17 +53,23 @@ const metall = new THREE.MeshStandardMaterial({
 });
 
 objLoader.load('images/xwing.obj', obj => {
-  obj.scale.set(0.01, 0.01, 0.01);
-  obj.rotation.x = -Math.PI / 2;
-  obj.traverse(function (child) {
-    if (child instanceof THREE.Mesh) {
-      child.material = metall;
-    }
+  obj.traverse(c => {
+    c.material = metall;
   });
-  obj.position.set(0, -1.5, 3);
   xWing.add(obj);
 });
-scene.add(xWing);
+
+
+// const Gltfloader = new GLTFLoader();
+// Gltfloader.load('./models/scene.gltf', (gltf) => {
+//   gltf.scene.scale.set(0.5, 0.5, 0.5);
+//   gltf.scene.position.set(0, -.5, 4);
+//   xWing.add(gltf.scene);
+// });
+xWingFrame.add(xWing);
+xWing.position.set(0, -1.5, 3);
+xWing.scale.set(0.01, 0.01, 0.01);
+scene.add(xWingFrame);
 
 class Planet {
   constructor(x, y, z, size, speed, file, sun = false, name = '') {
@@ -101,24 +110,26 @@ class Planet {
   }
 }
 
-class Projectile{
-  constructor(dir){
-    this.dir=dir;
-    const material=new THREE.MeshBasicMaterial({color: 0xff00ff});
-    const geometry=new THREE.CylinderGeometry(0.02,0.02,2,10);
-    const cyl1=new THREE.Mesh(geometry,material);
+class Projectile {
+  constructor(dir) {
+    this.dir = dir;
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xff00ff
+    });
+    const geometry = new THREE.CylinderGeometry(0.02, 0.02, 2, 10);
+    const cyl1 = new THREE.Mesh(geometry, material);
     cyl1.rotation.x = -Math.PI / 2;
-    cyl1.position.set(-1, -0.7 , 2.5);
-    const cyl2=new THREE.Mesh(geometry,material);
+    cyl1.position.set(-1, -0.7, 2.5);
+    const cyl2 = new THREE.Mesh(geometry, material);
     cyl2.rotation.x = -Math.PI / 2;
-    cyl2.position.set(1, -0.7 , 2.5);
-    const cyl3=new THREE.Mesh(geometry,material);
+    cyl2.position.set(1, -0.7, 2.5);
+    const cyl3 = new THREE.Mesh(geometry, material);
     cyl3.rotation.x = -Math.PI / 2;
-    cyl3.position.set(-1, -1.3 , 2.5);
-    const cyl4=new THREE.Mesh(geometry,material);
+    cyl3.position.set(-1, -1.3, 2.5);
+    const cyl4 = new THREE.Mesh(geometry, material);
     cyl4.rotation.x = -Math.PI / 2;
-    cyl4.position.set(1, -1.3 , 2.5);
-    this.obj=new THREE.Object3D();
+    cyl4.position.set(1, -1.3, 2.5);
+    this.obj = new THREE.Object3D();
     this.obj.add(cyl1);
     this.obj.add(cyl2);
     this.obj.add(cyl3);
@@ -126,10 +137,10 @@ class Projectile{
     scene.add(this.obj);
     setObject(this.obj);
   }
-  update(){
-    this.obj.position.x +=this.dir.x;
-    this.obj.position.y +=this.dir.y;
-    this.obj.position.z +=this.dir.z;
+  update() {
+    this.obj.position.x += this.dir.x;
+    this.obj.position.y += this.dir.y;
+    this.obj.position.z += this.dir.z;
   }
 
 }
@@ -142,9 +153,9 @@ earth.rotateX = 23 * Math.PI / 180;
 const moon = new Planet(30, 0, 0, 3, 0, 'moon.jpg');
 earth.addChild(moon);
 objects.push(earth);
-objects.push(new Planet(100, 0, 0, 8, 0.1, 'mercury.jpg',false,'mercury'));
-objects.push(new Planet(200, 0, 0, 8, 0.05, 'venusmap.jpg',false,'venus'));
-objects.push(new Planet(350, 0, 0, 10, 0.01, 'mars.jpg',false,'mars'));
+objects.push(new Planet(100, 0, 0, 8, 0.1, 'mercury.jpg', false, 'mercury'));
+objects.push(new Planet(200, 0, 0, 8, 0.05, 'venusmap.jpg', false, 'venus'));
+objects.push(new Planet(350, 0, 0, 10, 0.01, 'mars.jpg', false, 'mars'));
 objects.push(new Planet(500, 0, 0, 30, 0.005, 'jupitermap.jpg', false, 'jupiter'));
 
 //build the scenegraph
@@ -168,20 +179,34 @@ function setObject(obj) {
   obj.position.set(player.x, player.y, player.z);
 }
 
+function rotateShip(mov) {
+  if (xWing.rotation.z > Math.PI / 3) xWing.rotation.z = Math.PI / 3;
+  if (xWing.rotation.z < -Math.PI / 3) xWing.rotation.z = -Math.PI / 3;
+  if (mov.left) xWing.rotation.z += 0.03;
+  if (mov.right) xWing.rotation.z -= 0.03;
+  if (!mov.left&&!mov.right) xWing.rotation.z -= 0.1*xWing.rotation.z;
+  let rotx=xWing.rotation.x+Math.PI/2;
+  if (rotx > Math.PI / 3) xWing.rotation.x = -Math.PI/2+Math.PI / 3;
+  if (rotx < -Math.PI / 3) xWing.rotation.x = -Math.PI/2-Math.PI / 3;
+  if (mov.up) xWing.rotation.x -= 0.03;
+  if (mov.down) xWing.rotation.x += 0.03;
+  if (!mov.up&&!mov.down) xWing.rotation.x -= 0.1*(xWing.rotation.x+Math.PI/2);
+}
 const tempV = new THREE.Vector3();
-camera.position.z=1;
-const projectiles=[];
+const projectiles = [];
 
 function render(time) {
   time *= 0.001;
   movePlayer(mov);
-  if(mov.fire){
-    const dir=new THREE.Vector3(player.Z.x,player.Z.y,player.Z.z);
+
+  if (mov.fire) {
+    const dir = new THREE.Vector3(player.Z.x, player.Z.y, player.Z.z);
     projectiles.push(new Projectile(dir));
-    mov.fire=false;
+    mov.fire = false;
   }
   setObject(camera);
-  setObject(xWing);
+  setObject(xWingFrame);
+  rotateShip(mov);
 
   if (resizeRendererToDisplaySize(renderer)) {
     const canvas = renderer.domElement;
@@ -201,7 +226,9 @@ function render(time) {
     elem.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
   });
 
-  projectiles.forEach(proj=>{proj.update()});
+  projectiles.forEach(proj => {
+    proj.update()
+  });
   renderer.render(scene, camera);
 
   requestAnimationFrame(render);
