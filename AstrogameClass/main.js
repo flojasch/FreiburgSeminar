@@ -5,8 +5,15 @@ import {
 import {
   GLTFLoader
 } from 'https://threejsfundamentals.org/threejs/resources/threejs/r132/examples/jsm/loaders/GLTFLoader.js';
+import {
+  OrbitControls
+} from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
+import {
+  controls
+} from './controls.js'
 
-import {controls} from './controls.js'
+
+
 
 class Planet {
   constructor(x, y, z, size, speed, file, sun = false, name = '') {
@@ -47,13 +54,12 @@ class Planet {
   }
 }
 
-
-
 const canvas = document.querySelector("#c");
 const labelContainerElem = document.querySelector('#labels');
 const renderer = new THREE.WebGLRenderer({
-  canvas
+  canvas: canvas,
 });
+
 
 const fov = 75;
 const aspect = 2; // the canvas default
@@ -62,12 +68,18 @@ const far = 1000;
 const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 const scene = new THREE.Scene();
 
-//lights
+// const orbcontr = new OrbitControls(camera, canvas);
+// orbcontr.target.set(0, 0, -2);
+// orbcontr.update();
+
 const color = 0xffffff;
-const intensity = 1;
+let intensity = 1;
 const light = new THREE.PointLight(color, intensity);
 light.position.set(0, 0, 0);
 scene.add(light);
+intensity = 0.1;
+const amblight = new THREE.AmbientLight(color, intensity);
+scene.add(amblight);
 
 const loader = new THREE.TextureLoader();
 const texture = loader.load(
@@ -82,6 +94,60 @@ const objLoader = new OBJLoader();
 const xWing = new THREE.Object3D();
 const cameraFrame = new THREE.Object3D();
 cameraFrame.add(camera);
+
+const uniforms = {
+  iTime: {
+    value: 0
+  },
+  iResolution: {
+    value: new THREE.Vector3()
+  },
+  az: {
+    value: new THREE.Vector3()
+  },
+  ay: {
+    value: new THREE.Vector3()
+  },
+  ax: {
+    value: new THREE.Vector3()
+  },
+  ro: {
+    value: new THREE.Vector3()
+  }
+};
+
+const material = new THREE.ShaderMaterial({
+  fragmentShader,
+  uniforms,
+  transparent: true,
+});
+
+const plane = new THREE.PlaneGeometry(2, 2);
+
+const planeMesh = new THREE.Mesh(plane, material);
+planeMesh.position.set(0, 0, -.5);
+cameraFrame.add(planeMesh);
+
+function updateUniforms(time) {
+  uniforms.iResolution.value.set(canvas.width, canvas.height, 1);
+  uniforms.iTime.value = time;
+  const A = new THREE.Vector3();
+  const Q = cameraFrame.quaternion.clone();
+  A.set(1, 0, 0);
+  A.applyQuaternion(Q);
+  uniforms.ax.value.copy(A);
+  A.set(0, 1, 0);
+  A.applyQuaternion(Q);
+  uniforms.ay.value.copy(A);
+  A.set(0, 0, 1);
+  A.applyQuaternion(Q);
+  uniforms.az.value.copy(A);
+  const pos = new THREE.Vector3();
+  pos.sub(cameraFrame.position);
+  pos.multiplyScalar(0.1);
+  uniforms.ro.value = pos;
+}
+
 
 const projectiles = [];
 
@@ -99,23 +165,25 @@ const metall = new THREE.MeshStandardMaterial({
   metalness: 0.8,
 });
 
-objLoader.load('images/xwing.obj', obj => {
-  obj.traverse(c => {
-    c.material = metall;
-  });
-  obj.rotation.z = Math.PI;
-  obj.rotation.x = -Math.PI / 2;
-  obj.scale.multiplyScalar(0.01);
-  xWing.add(obj);
+// objLoader.load('images/xwing.obj', obj => {
+//   obj.traverse(c => {
+//     c.material = metall;
+//   });
+//   obj.rotation.z = Math.PI;
+//   obj.rotation.x = -Math.PI / 2;
+//   obj.scale.multiplyScalar(0.01);
+//   xWing.add(obj);
+// });
+
+
+const Gltfloader = new GLTFLoader();
+Gltfloader.load('./models/scene.gltf', (gltf) => {
+  gltf.scene.scale.set(0.54, 0.54, 0.54);
+  gltf.scene.rotation.y = Math.PI;
+  gltf.scene.position.set(0, -0.1, -1.5);
+  xWing.add(gltf.scene);
 });
 
-
-// const Gltfloader = new GLTFLoader();
-// Gltfloader.load('./models/scene.gltf', (gltf) => {
-//   gltf.scene.scale.set(0.5, 0.5, 0.5);
-//   gltf.scene.position.set(0, -.5, 4);
-//   xWing.add(gltf.scene);
-// });
 cameraFrame.add(xWing);
 xWing.position.set(0, -1.5, -3);
 cameraFrame.position.set(0, 0, 500);
@@ -158,6 +226,9 @@ function render(time) {
     camera.updateProjectionMatrix();
   }
   camera.updateWorldMatrix(true, false);
+
+  updateUniforms(time);
+
   objects.forEach(planet => {
     planet.update(time);
 
@@ -172,6 +243,10 @@ function render(time) {
 
   projectiles.forEach(proj => {
     proj.update()
+    if (proj.obj.position.length() > 500) {
+      scene.remove(proj.obj);
+      projectiles.splice(projectiles.indexOf(proj), 1);
+    }
   });
 
   renderer.render(scene, camera);

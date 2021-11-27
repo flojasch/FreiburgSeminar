@@ -183,7 +183,7 @@ export const controls = (function () {
         for (let j = 0; j < 2; ++j) {
           let cyl = new THREE.Mesh(geometry, material);
           cyl.rotation.x = -Math.PI / 2;
-          cyl.position.set(-1 + i * 2,  0.2+j*0.6 , 0);
+          cyl.position.set(-1 + i * 2,  -0.1+j*0.6 , 0);
           this.obj.add(cyl);
         }
     }
