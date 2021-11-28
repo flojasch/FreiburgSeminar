@@ -13,15 +13,19 @@ import {
 } from './controls.js'
 
 
-
-
 class Planet {
-  constructor(x, y, z, size, speed, file, sun = false, name = '') {
-    this.name = name;
-    const geometry = new THREE.SphereGeometry(size, 40, 40);
-    const texture = loader.load("images/" + file);
+  constructor(params) {
+    this.name = params.name;
+    this.size = params.size;
+    this.speed = params.speed;
+    this.file = params.file;
+    if (params.isSun == 'undefined') this.isSun = false;
+    else this.isSun = params.isSun;
+    this.name = params.name;
+    const geometry = new THREE.SphereGeometry(this.size, 40, 40);
+    const texture = loader.load("images/" + this.file);
     let material;
-    if (sun)
+    if (this.isSun)
       material = new THREE.MeshBasicMaterial({
         map: texture
       });
@@ -29,18 +33,14 @@ class Planet {
       material = new THREE.MeshPhongMaterial({
         map: texture
       });
-    let obj = new THREE.Mesh(geometry, material);
-    obj.position.set(x, y, z);
-    const orb = new THREE.Object3D();
-    orb.add(obj);
-    scene.add(orb);
-    const elem = document.createElement('div');
-    elem.textContent = this.name;
-    labelContainerElem.appendChild(elem);
-    this.speed = speed;
-    this.obj = obj;
-    this.orb = orb;
-    this.info = elem;
+    this.obj = new THREE.Mesh(geometry, material);
+    this.obj.position.copy(params.pos);
+    this.orb = new THREE.Object3D();
+    this.orb.add(this.obj);
+    scene.add(this.orb);
+    this.info = document.createElement('div');
+    this.info.textContent = this.name;
+    labelContainerElem.appendChild(this.info);
     this.rotateX = 0;
   }
   addChild(planet) {
@@ -74,21 +74,32 @@ const scene = new THREE.Scene();
 
 const color = 0xffffff;
 let intensity = 1;
-const light = new THREE.PointLight(color, intensity);
+let light = new THREE.PointLight(color, intensity);
 light.position.set(0, 0, 0);
 scene.add(light);
 intensity = 0.1;
-const amblight = new THREE.AmbientLight(color, intensity);
-scene.add(amblight);
+light = new THREE.AmbientLight(color, intensity);
+scene.add(light);
 
 const loader = new THREE.TextureLoader();
-const texture = loader.load(
-  'images/background.webp',
-  () => {
-    const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
-    rt.fromEquirectangularTexture(renderer, texture);
-    scene.background = rt.texture;
-  });
+// const texture = loader.load(
+//   'images/background.webp',
+//   () => {
+//     const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+//     rt.fromEquirectangularTexture(renderer, texture);
+//     scene.background = rt.texture;
+//   });
+
+const bgloader = new THREE.CubeTextureLoader();
+const bgtexture = bgloader.load([
+  './images/space-posx.jpg',
+  './images/space-negx.jpg',
+  './images/space-posy.jpg',
+  './images/space-negy.jpg',
+  './images/space-posz.jpg',
+  './images/space-negz.jpg',
+]);
+scene.background = bgtexture;
 
 const objLoader = new OBJLoader();
 const xWing = new THREE.Object3D();
@@ -117,15 +128,15 @@ const uniforms = {
 };
 
 const material = new THREE.ShaderMaterial({
-  fragmentShader,
-  uniforms,
+  fragmentShader: fragmentShader,
+  uniforms: uniforms,
   transparent: true,
 });
 
-const plane = new THREE.PlaneGeometry(2, 2);
+const plane = new THREE.PlaneGeometry(8 * canvas.width / canvas.height, 8);
 
 const planeMesh = new THREE.Mesh(plane, material);
-planeMesh.position.set(0, 0, -.5);
+planeMesh.position.set(0, 0, -5);
 cameraFrame.add(planeMesh);
 
 function updateUniforms(time) {
@@ -144,7 +155,6 @@ function updateUniforms(time) {
   uniforms.az.value.copy(A);
   const pos = new THREE.Vector3();
   pos.sub(cameraFrame.position);
-  pos.multiplyScalar(0.1);
   uniforms.ro.value = pos;
 }
 
@@ -190,17 +200,60 @@ cameraFrame.position.set(0, 0, 500);
 scene.add(cameraFrame);
 
 const objects = [];
-const sun = new Planet(0, 0, 0, 50, 0.25, 'sun.jpg', true, 'sun');
-objects.push(sun);
-const earth = new Planet(300, 0, 0, 10, 0.02, 'earth.jpg', false, 'earth');
+objects.push(new Planet({
+  pos: new THREE.Vector3(),
+  size: 50,
+  file: 'sun.jpg',
+  isSun: true,
+  name: '',
+  speed: 0
+}));
+const earth = new Planet({
+  pos: new THREE.Vector3(300, 0, 0),
+  size: 10,
+  file: 'earth.jpg',
+  name: '',
+  speed: 0.02
+});
 earth.rotateX = 23 * Math.PI / 180;
-const moon = new Planet(30, 0, 0, 3, 0, 'moon.jpg');
+const moon = new Planet({
+  pos: new THREE.Vector3(30, 0, 0),
+  size: 3,
+  file: 'moon.jpg',
+  name: '',
+  speed: 0
+});
 earth.addChild(moon);
 objects.push(earth);
-objects.push(new Planet(100, 0, 0, 8, 0.1, 'mercury.jpg', false, 'mercury'));
-objects.push(new Planet(200, 0, 0, 8, 0.05, 'venusmap.jpg', false, 'venus'));
-objects.push(new Planet(350, 0, 0, 10, 0.01, 'mars.jpg', false, 'mars'));
-objects.push(new Planet(500, 0, 0, 30, 0.005, 'jupitermap.jpg', false, 'jupiter'));
+
+objects.push(new Planet({
+  pos: new THREE.Vector3(100, 0, 0),
+  size: 8,
+  file: 'mercury.jpg',
+  name: '',
+  speed: 0.1
+}));
+objects.push(new Planet({
+  pos: new THREE.Vector3(200, 0, 0),
+  size: 8,
+  file: 'venusmap.jpg',
+  name: '',
+  speed: 0.05
+}));
+objects.push(new Planet({
+  pos: new THREE.Vector3(350, 0, 0),
+  size: 10,
+  file: 'mars.jpg',
+  name: '',
+  speed: 0.01
+}));
+objects.push(new Planet({
+  pos: new THREE.Vector3(500, 0, 0),
+  size: 30,
+  file: 'jupitermap.jpg',
+  name: '',
+  speed: 0.005
+}));
 
 function resizeRendererToDisplaySize(renderer) {
   const canvas = renderer.domElement;

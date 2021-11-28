@@ -7,9 +7,10 @@ const fragmentShader = `
   uniform vec3 ay;
   uniform vec3 ax;
   uniform vec3 ro;
+  
 
   #define MAX_STEPS 100
-  #define MAX_DIST 500.
+  #define MAX_DIST 1000.
   #define SURF_DIST .01
   #define MAX_ITER 5
   
@@ -23,8 +24,7 @@ const fragmentShader = `
     float px=p.x;
       float c=cos(alpha);
       float s=sin(alpha);
-      
-     p.x=c*px-s*p.z;
+      p.x=c*px-s*p.z;
       p.z=s*px+c*p.z;
       
       return p;
@@ -34,7 +34,6 @@ const fragmentShader = `
     float py=p.y;
       float c=cos(alpha);
       float s=sin(alpha);
-      
       p.y=c*py-s*p.z;
       p.z=s*py+c*p.z;
       
@@ -42,15 +41,13 @@ const fragmentShader = `
   }
   
   float sdMenger(vec3 p){
-      float size=2.;
-      p.z -=3.;  
-      //p=rotateY(p,iTime*.5);
+      float size=50.; 
       vec3[] s = vec3[](vec3(1,1,1),vec3(1,1,0));
       
       for(int iter=0;iter<MAX_ITER;++iter){
-          float alpha=0.03*3.14*iTime; 
+          float alpha=0.03*iTime; 
           p=rotateY(p,alpha);
-          float beta=0.07*3.14*iTime; 
+          float beta=0.07*iTime; 
           p=rotateX(p,beta);
          
           p=abs(p);
@@ -117,18 +114,16 @@ const fragmentShader = `
   
   void mainImage( out vec4 fragColor, in vec2 fragCoord )
   {
-      vec2 uv=fragCoord.xy/iResolution.x-.5;
-      vec3 rd= normalize( uv.x*ax+uv.y*ay+az);
+      vec2 uv=2.*(fragCoord.xy/iResolution.x-.5);
+      vec3 rd= normalize( -uv.x*ax-uv.y*ay+az);
       
       vec3 cubecol = vec3(1.,.0,.0);  
-     // vec3 rd = normalize(vec3(uv.x, uv.y,1)); 
       
-      
-    float d=RayMarch(ro,rd);   
-      vec3 p= ro+rd*d;   
+      vec3 pos=vec3(-300.,0.,-100.)+ro;
+      float d=RayMarch(pos,rd);   
+      vec3 p= pos+rd*d;   
      
-      //Get Light
-      vec3 lightPos =vec3(10,20,-20);
+      vec3 lightPos =vec3(0.,0.,-500.);
       vec3 l=normalize(lightPos-p);
       vec3 n=GetNormal(p);
       float cosphi=dot(n,l);
