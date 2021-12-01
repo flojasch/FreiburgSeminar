@@ -1,4 +1,4 @@
-import * as THREE from "https://threejsfundamentals.org/threejs/resources/threejs/r132/build/three.module.js";
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
 export const controls = (function () {
 
@@ -54,7 +54,6 @@ export const controls = (function () {
         case 32: //space
           this._move.fire = true;
           break;
-  
       }
     }
   
@@ -186,9 +185,11 @@ export const controls = (function () {
           cyl.position.set(-1 + i * 2,  -0.1+j*0.6 , 0);
           this.obj.add(cyl);
         }
+      this.hit=false;  
     }
     update() {
       this.obj.position.sub(this.dir);
+      if(this.obj.position.length() < 490) this.hit=true;
     }
   
   }

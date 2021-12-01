@@ -1,27 +1,87 @@
-import * as THREE from "https://threejsfundamentals.org/threejs/resources/threejs/r132/build/three.module.js";
-import {
-  OBJLoader
-} from 'https://threejsfundamentals.org/threejs/resources/threejs/r132/examples/jsm/loaders/OBJLoader.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+
 import {
   GLTFLoader
-} from 'https://threejsfundamentals.org/threejs/resources/threejs/r132/examples/jsm/loaders/GLTFLoader.js';
+} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
+
 import {
-  OrbitControls
-} from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
+  math
+} from './math.js';
 import {
   controls
 } from './controls.js'
+import {
+  particles
+} from './particles.js';
 
+class ExplodeParticles {
+  constructor(game) {
+    this._particleSystem = new particles.ParticleSystem(
+      game, {
+        texture: "./images/explosion.png"
+      });
+    this._particles = [];
+  }
+
+  Splode(origin) {
+    for (let i = 0; i < 96; i++) {
+      const p = this._particleSystem.CreateParticle();
+      p.Position.copy(origin);
+      p.Velocity = new THREE.Vector3(
+        math.rand_range(-1, 1),
+        math.rand_range(-1, 1),
+        math.rand_range(-1, 1)
+      );
+      p.Velocity.normalize();
+      p.Velocity.multiplyScalar(50);
+      p.TotalLife = 2.0;
+      p.Life = p.TotalLife;
+      p.Colours = [new THREE.Color(0xFF8010), new THREE.Color(0xFF8010)];
+      p.Sizes = [4, 16];
+      p.Size = p.Sizes[0];
+      this._particles.push(p);
+    }
+  }
+
+  Update(timeInSeconds) {
+    const _V = new THREE.Vector3();
+
+    this._particles = this._particles.filter(p => {
+      return p.Alive;
+    });
+    for (const p of this._particles) {
+      p.Life -= timeInSeconds;
+      if (p.Life <= 0) {
+        p.Alive = false;
+      }
+      p.Position.add(p.Velocity.clone().multiplyScalar(timeInSeconds));
+
+      _V.copy(p.Velocity);
+      _V.multiplyScalar(10.0 * timeInSeconds);
+      const velocityLength = p.Velocity.length();
+
+      if (_V.length() > velocityLength) {
+        _V.normalize();
+        _V.multiplyScalar(velocityLength)
+      }
+
+      p.Velocity.sub(_V);
+      p.Size = math.lerp(p.Life / p.TotalLife, p.Sizes[0], p.Sizes[1]);
+      p.Colour.copy(p.Colours[0]);
+      p.Colour.lerp(p.Colours[1], 1.0 - p.Life / p.TotalLife);
+      p.Opacity = math.smootherstep(p.Life / p.TotalLife, 0.0, 1.0);
+    }
+    this._particleSystem.Update();
+  }
+};
 
 class Planet {
   constructor(params) {
-    this.name = params.name;
+    this.name = params.name ?? '';
     this.size = params.size;
     this.speed = params.speed;
     this.file = params.file;
-    if (params.isSun == 'undefined') this.isSun = false;
-    else this.isSun = params.isSun;
-    this.name = params.name;
+    this.isSun = params.isSun ?? false;
     const geometry = new THREE.SphereGeometry(this.size, 40, 40);
     const texture = loader.load("images/" + this.file);
     let material;
@@ -62,15 +122,23 @@ const renderer = new THREE.WebGLRenderer({
 
 
 const fov = 75;
-const aspect = 2; // the canvas default
+const aspect = 2; 
 const near = 0.1;
 const far = 1000;
 const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 const scene = new THREE.Scene();
 
-// const orbcontr = new OrbitControls(camera, canvas);
-// orbcontr.target.set(0, 0, -2);
-// orbcontr.update();
+function resizeRendererToDisplaySize(renderer) {
+  const canvas = renderer.domElement;
+  const pixelRatio = window.devicePixelRatio;
+  const width = (canvas.clientWidth * pixelRatio) | 0;
+  const height = (canvas.clientHeight * pixelRatio) | 0;
+  const needResize = canvas.width !== width || canvas.height !== height;
+  if (needResize) {
+    renderer.setSize(width, height, false);
+  }
+  return needResize;
+}
 
 const color = 0xffffff;
 let intensity = 1;
@@ -101,7 +169,7 @@ const bgtexture = bgloader.load([
 ]);
 scene.background = bgtexture;
 
-const objLoader = new OBJLoader();
+//const objLoader = new OBJLoader();
 const xWing = new THREE.Object3D();
 const cameraFrame = new THREE.Object3D();
 cameraFrame.add(camera);
@@ -158,7 +226,6 @@ function updateUniforms(time) {
   uniforms.ro.value = pos;
 }
 
-
 const projectiles = [];
 
 const params = {
@@ -168,6 +235,8 @@ const params = {
   scene: scene,
 }
 const control = new controls.Controls(params);
+
+const explosion = new ExplodeParticles(scene);
 
 const metall = new THREE.MeshStandardMaterial({
   color: 0x3377ff,
@@ -205,14 +274,13 @@ objects.push(new Planet({
   size: 50,
   file: 'sun.jpg',
   isSun: true,
-  name: '',
+  name: 'sun',
   speed: 0
 }));
 const earth = new Planet({
   pos: new THREE.Vector3(300, 0, 0),
   size: 10,
   file: 'earth.jpg',
-  name: '',
   speed: 0.02
 });
 earth.rotateX = 23 * Math.PI / 180;
@@ -220,7 +288,6 @@ const moon = new Planet({
   pos: new THREE.Vector3(30, 0, 0),
   size: 3,
   file: 'moon.jpg',
-  name: '',
   speed: 0
 });
 earth.addChild(moon);
@@ -230,48 +297,35 @@ objects.push(new Planet({
   pos: new THREE.Vector3(100, 0, 0),
   size: 8,
   file: 'mercury.jpg',
-  name: '',
   speed: 0.1
 }));
 objects.push(new Planet({
   pos: new THREE.Vector3(200, 0, 0),
   size: 8,
   file: 'venusmap.jpg',
-  name: '',
   speed: 0.05
 }));
 objects.push(new Planet({
   pos: new THREE.Vector3(350, 0, 0),
   size: 10,
   file: 'mars.jpg',
-  name: '',
   speed: 0.01
 }));
 objects.push(new Planet({
   pos: new THREE.Vector3(500, 0, 0),
   size: 30,
   file: 'jupitermap.jpg',
-  name: '',
   speed: 0.005
 }));
 
-function resizeRendererToDisplaySize(renderer) {
-  const canvas = renderer.domElement;
-  const pixelRatio = window.devicePixelRatio;
-  const width = (canvas.clientWidth * pixelRatio) | 0;
-  const height = (canvas.clientHeight * pixelRatio) | 0;
-  const needResize = canvas.width !== width || canvas.height !== height;
-  if (needResize) {
-    renderer.setSize(width, height, false);
-  }
-  return needResize;
-}
+
 
 const tempV = new THREE.Vector3();
 
 function render(time) {
   time *= 0.001;
   control.Update();
+  explosion.Update(0.05);
 
   if (resizeRendererToDisplaySize(renderer)) {
     const canvas = renderer.domElement;
@@ -295,10 +349,16 @@ function render(time) {
   });
 
   projectiles.forEach(proj => {
+    let remove = false;
     proj.update()
-    if (proj.obj.position.length() > 500) {
-      scene.remove(proj.obj);
+    if (proj.obj.position.length() > 500) remove = true;
+    if (proj.hit) {
+      remove = true;
+      explosion.Splode(proj.obj.position);
+    }
+    if (remove) {
       projectiles.splice(projectiles.indexOf(proj), 1);
+      scene.remove(proj.obj);
     }
   });
 
