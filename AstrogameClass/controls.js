@@ -90,14 +90,13 @@ export const controls = (function () {
     }
   
     Update() {
-      const ang = 0.01;
+      const ang = 0.02;
       const cameraFrame = this._params.frame;
       const _Q = new THREE.Quaternion();
       const _A = new THREE.Vector3();
       const _R = cameraFrame.quaternion.clone();
-      const _vel = new THREE.Vector3(0, 0, .4);
+      const _vel = new THREE.Vector3(0, 0, .8);
       _vel.applyQuaternion(_R);
-      _vel.multiplyScalar(2);
       if (this._move.left) {
         _A.set(0, 1, 0);
         _Q.setFromAxisAngle(_A, ang);
@@ -140,6 +139,7 @@ export const controls = (function () {
       if (this._move.fire) {
         const projectile=new Projectile(this._params.model);
         this._params.projectiles.push(projectile);
+        this._params.lasersound.play();
         this._params.scene.add(projectile.obj);
         this._move.fire = false;
       }
@@ -189,7 +189,12 @@ export const controls = (function () {
     }
     update() {
       this.obj.position.sub(this.dir);
-      if(this.obj.position.length() < 490) this.hit=true;
+    }
+    checkCollision(entity){
+      const r=new THREE.Vector3();
+      entity.obj.getWorldPosition(r);
+      r.sub(this.obj.position);
+      if(r.length() < entity.size) this.hit=true;
     }
   
   }

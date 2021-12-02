@@ -149,14 +149,19 @@ intensity = 0.1;
 light = new THREE.AmbientLight(color, intensity);
 scene.add(light);
 
+const listener = new THREE.AudioListener();
+camera.add( listener );
+const lasersound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+audioLoader.load( 'sounds/laser.wav', function( buffer ) {
+	lasersound.setBuffer( buffer );
+});
+const bombsound = new THREE.Audio( listener );
+audioLoader.load( 'sounds/bomb.wav', function( buffer ) {
+	bombsound.setBuffer( buffer );
+});
+
 const loader = new THREE.TextureLoader();
-// const texture = loader.load(
-//   'images/background.webp',
-//   () => {
-//     const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
-//     rt.fromEquirectangularTexture(renderer, texture);
-//     scene.background = rt.texture;
-//   });
 
 const bgloader = new THREE.CubeTextureLoader();
 const bgtexture = bgloader.load([
@@ -233,26 +238,11 @@ const params = {
   model: xWing,
   projectiles: projectiles,
   scene: scene,
+  lasersound: lasersound,
 }
 const control = new controls.Controls(params);
 
 const explosion = new ExplodeParticles(scene);
-
-const metall = new THREE.MeshStandardMaterial({
-  color: 0x3377ff,
-  roughness: 0.4,
-  metalness: 0.8,
-});
-
-// objLoader.load('images/xwing.obj', obj => {
-//   obj.traverse(c => {
-//     c.material = metall;
-//   });
-//   obj.rotation.z = Math.PI;
-//   obj.rotation.x = -Math.PI / 2;
-//   obj.scale.multiplyScalar(0.01);
-//   xWing.add(obj);
-// });
 
 
 const Gltfloader = new GLTFLoader();
@@ -318,14 +308,12 @@ objects.push(new Planet({
   speed: 0.005
 }));
 
-
-
 const tempV = new THREE.Vector3();
 
 function render(time) {
   time *= 0.001;
   control.Update();
-  explosion.Update(0.05);
+  explosion.Update(0.02);
 
   if (resizeRendererToDisplaySize(renderer)) {
     const canvas = renderer.domElement;
@@ -351,10 +339,16 @@ function render(time) {
   projectiles.forEach(proj => {
     let remove = false;
     proj.update()
-    if (proj.obj.position.length() > 500) remove = true;
+    const r=proj.obj.position.clone();
+    r.sub(cameraFrame.position);
+    if (r.length() > 500) remove = true;
+    objects.forEach(planet=>{
+      proj.checkCollision(planet);
+    });  
     if (proj.hit) {
       remove = true;
       explosion.Splode(proj.obj.position);
+      bombsound.play();
     }
     if (remove) {
       projectiles.splice(projectiles.indexOf(proj), 1);
