@@ -148,26 +148,16 @@ class Blaster {
   Update(time) {
     this._blaster.forEach(blaSys => {
       blaSys.Update(time);
-      this._Hits(blaSys);
-      this._RemoveOld(blaSys);
+      for (let name in this._entities) {
+        const r = blaSys.Position;
+        if (blaSys._Hit(this._entities[name])) {
+          this._entities['_explosionSystem'].Splode(r);
+          this._blaster.splice(this._blaster.indexOf(blaSys), 1);
+          this._scene.remove(blaSys.obj);
+        }  
+      }
     });
   }
-  _RemoveOld(blaSys){
-    if(!blaSys.isAlive){
-      this._blaster.splice(this._blaster.indexOf(blaSys), 1);
-      this._scene.remove(blaSys.obj);
-    }
-  }
-  _Hits(blaSys){
-    for (let name in this._entities) {
-      const r = blaSys.Position;
-      if (blaSys._Hit(this._entities[name])) {
-        this._entities['_explosionSystem'].Splode(r);
-        blaSys.isAlive=false;
-      }  
-    }
-  }
-
   get Position() {
     return new THREE.Vector3();
   }
@@ -203,17 +193,12 @@ class BlasterSystem {
         this.obj.add(cyl);
       }
     this.scene.add(this.obj);
-    this.liveTime=0.0;
-    this.isAlive=true;
     params.sound.play();
   }
   Update(timeInSeconds) {
     const dR = this._vel.clone();
     dR.multiplyScalar(timeInSeconds);
     this.obj.position.sub(dR);
-    this.liveTime +=timeInSeconds;
-    if(this.liveTime > 4.0)
-      this.isAlive=false;
   }
 
   _Hit(entity) {

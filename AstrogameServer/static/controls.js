@@ -3,12 +3,12 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 export const controls = (function () {
 
   class _Controls {
-    constructor(params) {
-      this._Init(params);
+    constructor(player) {
+      this._Init(player);
     }
   
-    _Init(params) {
-      this._params = params;
+    _Init(player) {
+      this._player = player;
       this._move = {
         left: false,
         right: false,
@@ -89,9 +89,9 @@ export const controls = (function () {
       }
     }
   
-    Update() {
-      const ang = 0.02;
-      const cameraFrame = this._params.frame;
+    Update(time) {
+      const ang = time;
+      const cameraFrame = this._player._frame;
       const _Q = new THREE.Quaternion();
       const _A = new THREE.Vector3();
       const _R = cameraFrame.quaternion.clone();
@@ -137,16 +137,13 @@ export const controls = (function () {
       this._rotateShip();
   
       if (this._move.fire) {
-        const projectile=new Projectile(this._params.model);
-        this._params.projectiles.push(projectile);
-        this._params.lasersound.play();
-        this._params.scene.add(projectile.obj);
+        this._player.Fire();
         this._move.fire = false;
       }
     }
   
     _rotateShip() {
-      const model = this._params.model;
+      const model = this._player._model;
       const alpha = Math.PI / 4;
       if (model.rotation.z > alpha) model.rotation.z = alpha;
       if (model.rotation.z < -alpha) model.rotation.z = -alpha;
@@ -160,41 +157,12 @@ export const controls = (function () {
       if (this._move.down) model.rotation.x -= 0.03;
       if (!this._move.up && !this._move.down) model.rotation.x -= 0.1 * model.rotation.x;
     }
-  
-  }
 
-  class Projectile {
-    constructor(model) {
-      this.dir = new THREE.Vector3(0, 0, 1);
-      const Q=new THREE.Quaternion;
-      model.getWorldQuaternion(Q);
-      this.dir.applyQuaternion(Q);
-      const pos=new THREE.Vector3();
-      model.getWorldPosition(pos);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xff00ff
-      });
-      const geometry = new THREE.CylinderGeometry(0.02, 0.02, 2, 10);
-      this.obj = new THREE.Object3D();
-      this.obj.position.copy(pos);
-      this.obj.quaternion.copy(Q);
-      for (let i = 0; i < 2; ++i)
-        for (let j = 0; j < 2; ++j) {
-          let cyl = new THREE.Mesh(geometry, material);
-          cyl.rotation.x = -Math.PI / 2;
-          cyl.position.set(-1 + i * 2,  -0.1+j*0.6 , 0);
-          this.obj.add(cyl);
-        }
-      this.hit=false;  
+    get Position(){
+      return new THREE.Vector3();
     }
-    update() {
-      this.obj.position.sub(this.dir);
-    }
-    checkCollision(entity){
-      const r=new THREE.Vector3();
-      entity.obj.getWorldPosition(r);
-      r.sub(this.obj.position);
-      if(r.length() < entity.size) this.hit=true;
+    get Radius(){
+      return -1;//kann nicht getroffen werden
     }
   
   }

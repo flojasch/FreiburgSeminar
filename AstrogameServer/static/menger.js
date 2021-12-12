@@ -1,4 +1,8 @@
-const fragmentShader = `
+class Menger {
+  constructor(params) {
+    this._params=params;
+    this._frame=params.frame;
+    const fragmentShader = `
   #include <common>
  
   uniform vec3 iResolution;
@@ -145,3 +149,57 @@ void main() {
   mainImage(gl_FragColor, gl_FragCoord.xy);
 }
 `;
+    this.uniforms = {
+      iTime: {
+        value: 0
+      },
+      iResolution: {
+        value: new THREE.Vector3()
+      },
+      az: {
+        value: new THREE.Vector3()
+      },
+      ay: {
+        value: new THREE.Vector3()
+      },
+      ax: {
+        value: new THREE.Vector3()
+      },
+      ro: {
+        value: new THREE.Vector3()
+      }
+    };
+
+    const material = new THREE.ShaderMaterial({
+      fragmentShader: fragmentShader,
+      uniforms: this.uniforms,
+      transparent: true,
+    });
+
+    const plane = new THREE.PlaneGeometry(8 * canvas.width / canvas.height, 8);
+
+    const planeMesh = new THREE.Mesh(plane, material);
+    planeMesh.position.set(0, 0, -5);
+    this._frame.add(planeMesh);
+  }
+
+  Update(time) {
+    this.uniforms.iResolution.value.set(canvas.width, canvas.height, 1);
+    this.uniforms.iTime.value += time;
+    const A = new THREE.Vector3();
+    const Q = this._frame.quaternion.clone();
+    A.set(1, 0, 0);
+    A.applyQuaternion(Q);
+    this.uniforms.ax.value.copy(A);
+    A.set(0, 1, 0);
+    A.applyQuaternion(Q);
+    this.uniforms.ay.value.copy(A);
+    A.set(0, 0, 1);
+    A.applyQuaternion(Q);
+    this.uniforms.az.value.copy(A);
+    const pos = new THREE.Vector3();
+    pos.sub(this._frame.cameraFrame.position);
+    this.uniforms.ro.value = pos;
+  }
+
+}
