@@ -91,7 +91,7 @@ export const controls = (function () {
   
     Update(time) {
       const ang = time;
-      const cameraFrame = this._player._frame;
+      const cameraFrame = this._player._camera;
       const _Q = new THREE.Quaternion();
       const _A = new THREE.Vector3();
       const _R = cameraFrame.quaternion.clone();

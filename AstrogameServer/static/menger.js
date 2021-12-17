@@ -1,7 +1,10 @@
-class Menger {
-  constructor(params) {
-    this._params=params;
-    this._frame=params.frame;
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+
+export const menger = (function () {
+
+  class _Menger {
+  constructor(camera) {
+    this._camera=camera;
     const fragmentShader = `
   #include <common>
  
@@ -176,18 +179,17 @@ void main() {
       transparent: true,
     });
 
-    const plane = new THREE.PlaneGeometry(8 * canvas.width / canvas.height, 8);
-
+    const plane = new THREE.PlaneGeometry(8 * window.innerWidth / window.innerHeight, 8);
     const planeMesh = new THREE.Mesh(plane, material);
     planeMesh.position.set(0, 0, -5);
-    this._frame.add(planeMesh);
+    this._camera.add(planeMesh);
   }
 
   Update(time) {
-    this.uniforms.iResolution.value.set(canvas.width, canvas.height, 1);
+    this.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight, 1);
     this.uniforms.iTime.value += time;
     const A = new THREE.Vector3();
-    const Q = this._frame.quaternion.clone();
+    const Q = this._camera.quaternion.clone();
     A.set(1, 0, 0);
     A.applyQuaternion(Q);
     this.uniforms.ax.value.copy(A);
@@ -198,8 +200,21 @@ void main() {
     A.applyQuaternion(Q);
     this.uniforms.az.value.copy(A);
     const pos = new THREE.Vector3();
-    pos.sub(this._frame.cameraFrame.position);
+    pos.sub(this._camera.position);
     this.uniforms.ro.value = pos;
   }
 
+  get Position(){
+    return new THREE.Vector3();
+  }
+  get Radius(){
+    return -1;//kann nicht getroffen werden
+  }
+
 }
+
+
+return {
+  Menger: _Menger,
+};
+})();

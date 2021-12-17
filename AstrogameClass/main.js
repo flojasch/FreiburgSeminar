@@ -13,6 +13,9 @@ import {
 import {
   particles
 } from './particles.js';
+import {
+  menger
+} from './menger.js';
 
 let _APP = null;
 
@@ -89,14 +92,11 @@ class PlayerEntity {
   constructor(game) {
     this._game = game;
     this._model = game._model;
-    this._frame = new THREE.Group();
-    this._frame.add(game._camera);
-    this._frame.add(game._model);
-    this._frame.position.set(0, 0, 500);
-
+    this._camera=game._camera;
+    this._camera.add(game._model);
+   
     game._model.position.set(0, -1.5, -3);
-    game._scene.add(this._frame);
-
+    
     this._fireCooldown = 0.0;
     this._health = 1000.0;
   }
@@ -259,8 +259,11 @@ class BattleGame {
     this._threejs = new THREE.WebGLRenderer({
       antialias: true,
     });
+    
     this._threejs.setPixelRatio(window.devicePixelRatio);
-    this._threejs.setSize(window.innerWidth, window.innerHeight);
+    this._width=window.innerWidth;
+    this._height=window.innerHeight;
+    this._threejs.setSize(this._width, this._height);
 
     document.body.appendChild(this._threejs.domElement);
 
@@ -313,14 +316,17 @@ class BattleGame {
 
     this._entities['_explosionSystem'] = new ExplodeParticles(this);
     this._entities['_blaster'] = new Blaster(this);
+    //this._entities['_menger']=new menger.Menger(this._camera);
   }
 
   _SetCamera() {
     const fov = 75;
-    const aspect = 2;
+    const aspect = this._width/this._height;
     const near = 0.1;
     const far = 1000;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    this._camera.position.set(0, 0, 500);
+    this._scene.add(this._camera);
   }
 
   _SetSound() {
@@ -377,9 +383,11 @@ class BattleGame {
   }
 
   _OnWindowResize() {
-    this._camera.aspect = window.innerWidth / window.innerHeight;
+    this._width=window.innerWidth;
+    this._height=window.innerHeight;
+    this._camera.aspect = this._width / this._height;
     this._camera.updateProjectionMatrix();
-    this._threejs.setSize(window.innerWidth, window.innerHeight);
+    this._threejs.setSize(this._width, this._height);
   }
 }
 

@@ -13,12 +13,15 @@ import {
 import {
   particles
 } from './particles.js';
+import {
+  menger
+} from './menger.js';
 
 let _APP = null;
 
 class ExplodeParticles {
   constructor(game) {
-    this._sound=game._bombsound;
+    this._sound = game._bombsound;
     this._particleSystem = new particles.ParticleSystem(
       game._scene, {
         texture: "./images/explosion.png"
@@ -89,16 +92,17 @@ class PlayerEntity {
   constructor(game) {
     this._game = game;
     this._model = game._model;
-    this._frame = new THREE.Group();
-    this._frame.add(game._camera);
-    this._frame.add(game._model);
-    this._frame.position.set(0, 0, 500);
+    this._camera = game._camera;
+    this._camera.add(game._model);
 
     game._model.position.set(0, -1.5, -3);
-    game._scene.add(this._frame);
 
     this._fireCooldown = 0.0;
     this._health = 1000.0;
+    SendCoords('new_player');
+  }
+  get Quaternion() {
+    return this._model.getWorldQuaternion();
   }
   get Position() {
     return this._model.getWorldPosition();
@@ -111,6 +115,19 @@ class PlayerEntity {
   }
   get Dead() {
     return (this._health <= 0.0);
+  }
+  SendCoords(label) {
+    const r = this.Position;
+    const Q = this.Quaternion;
+    socket.emit(label, {
+      x: r.x,
+      y: r.y,
+      z: r.z,
+      qx: Q.x,
+      qy: Q.y,
+      qz: Q.z,
+      qw: Q.w,
+    });
   }
   TakeDamage(dmg) {
     this._game._entities['_explosionSystem'].Splode(this.Position);
@@ -132,6 +149,64 @@ class PlayerEntity {
       return;
     }
     this._fireCooldown -= timeInSeconds;
+    SendCoords('player');
+  }
+}
+
+class OtherPlayers {
+  constructor(game) {
+    this._game = game;
+    this._ships = {};
+    this._playersPos = game._playersPos;
+    this._model = new THREE.Object3D();
+    this._CreateModel();
+  }
+  _Add(id) {
+    this._ships[id] = new Ship({
+      model: this._model,
+      scene: this._game._scene,
+      coords: this._playersPos[id],
+    });
+  }
+  _Remove(id){
+    this._ships[id]._Remove();
+  }
+  _CreateModel() {
+    const loader = new GLTFLoader();
+    loader.load('./models/scene.gltf', (gltf) => {
+      gltf.scene.scale.set(0.54, 0.54, 0.54);
+      gltf.scene.rotation.y = Math.PI;
+      gltf.scene.position.set(0, -0.1, -1.5);
+      this._model.add(gltf.scene);
+    });
+  }
+  get Position() {
+    return new THREE.Vector3();
+  }
+  get Radius() {
+    return -1.0;
+  }
+  Update(time) {
+    for(let ships of this._ships){
+      ships._SetCoords();
+    }
+  }
+}
+
+class Ship {
+  constructor(params) {
+    this._model = params.model.clone();
+    this._scene = params.scene;
+    this._coords= params.coords;
+    this._SetCoords();
+    this._scene.add(this._model);
+  }
+  _SetCoords(){
+    this._model.position.set(this._coords.x,this._coords.y,this._coords.z);
+    this._model.quaternion.set(this._coords.qx,this._coords.qy,this._coords.qz,this._coords.qw);
+  }
+  _Remove(){
+    this._scene.remove(this._model);
   }
 }
 
@@ -139,8 +214,8 @@ class Blaster {
   constructor(game) {
     this._blaster = [];
     this._entities = game._entities;
-    this._scene=game._scene;
-    this._model=game._model;
+    this._scene = game._scene;
+    this._model = game._model;
   }
   _Push(blasterSystem) {
     this._blaster.push(blasterSystem);
@@ -148,16 +223,26 @@ class Blaster {
   Update(time) {
     this._blaster.forEach(blaSys => {
       blaSys.Update(time);
-      for (let name in this._entities) {
-        const r = blaSys.Position;
-        if (blaSys._Hit(this._entities[name])) {
-          this._entities['_explosionSystem'].Splode(r);
-          this._blaster.splice(this._blaster.indexOf(blaSys), 1);
-          this._scene.remove(blaSys.obj);
-        }  
-      }
+      this._Hits(blaSys);
+      this._RemoveOld(blaSys);
     });
   }
+  _RemoveOld(blaSys) {
+    if (!blaSys.isAlive) {
+      this._blaster.splice(this._blaster.indexOf(blaSys), 1);
+      this._scene.remove(blaSys.obj);
+    }
+  }
+  _Hits(blaSys) {
+    for (let name in this._entities) {
+      const r = blaSys.Position;
+      if (blaSys._Hit(this._entities[name])) {
+        this._entities['_explosionSystem'].Splode(r);
+        blaSys.isAlive = false;
+      }
+    }
+  }
+
   get Position() {
     return new THREE.Vector3();
   }
@@ -193,12 +278,17 @@ class BlasterSystem {
         this.obj.add(cyl);
       }
     this.scene.add(this.obj);
+    this.liveTime = 0.0;
+    this.isAlive = true;
     params.sound.play();
   }
   Update(timeInSeconds) {
     const dR = this._vel.clone();
     dR.multiplyScalar(timeInSeconds);
     this.obj.position.sub(dR);
+    this.liveTime += timeInSeconds;
+    if (this.liveTime > 4.0)
+      this.isAlive = false;
   }
 
   _Hit(entity) {
@@ -209,7 +299,7 @@ class BlasterSystem {
 
   get Position() {
     return this.obj.position.clone();
-  }  
+  }
 
 }
 
@@ -244,8 +334,11 @@ class BattleGame {
     this._threejs = new THREE.WebGLRenderer({
       antialias: true,
     });
+
     this._threejs.setPixelRatio(window.devicePixelRatio);
-    this._threejs.setSize(window.innerWidth, window.innerHeight);
+    this._width = window.innerWidth;
+    this._height = window.innerHeight;
+    this._threejs.setSize(this._width, this._height);
 
     document.body.appendChild(this._threejs.domElement);
 
@@ -255,17 +348,21 @@ class BattleGame {
     this._scene = new THREE.Scene();
     this._entities = {};
     this._model = new THREE.Object3D();
+    this._playersCoords = {};
     this._Initialize();
-    this._RAF();
+    this._Socket();
   }
 
-  _RAF() {
-    requestAnimationFrame((t) => {
-      if (this._previousRAF === null) {
-        this._previousRAF = t;
+  _Socket() {
+    socket.on('state', (playersCoords) => {
+      for (const id in playersCoords) {
+        if (this._playersCoords[id] == null && id != socket.id) {
+          this._entities['_otherPlayers']._Add(id);
+        }
+        this._playersCoords[id] = playersCoords[id];
       }
-      this._Render(t - this._previousRAF);
-      this._previousRAF = t;
+      this._StepEntities(1000 / 60);
+      this._threejs.render(this._scene, this._camera);
     });
   }
 
@@ -273,15 +370,6 @@ class BattleGame {
     for (let name in this._entities) {
       this._entities[name].Update(timeInSeconds);
     }
-  }
-
-  _Render(timeInMS) {
-    const timeInSeconds = timeInMS * 0.001;
-
-    this._StepEntities(timeInSeconds);
-    this._threejs.render(this._scene, this._camera);
-
-    this._RAF();
   }
 
   _Initialize() {
@@ -298,25 +386,32 @@ class BattleGame {
 
     this._entities['_explosionSystem'] = new ExplodeParticles(this);
     this._entities['_blaster'] = new Blaster(this);
+    //this._entities['_menger']=new menger.Menger(this._camera);
+    this._entities['_otherPlayers'] = new OtherPlayers(this);
   }
 
   _SetCamera() {
     const fov = 75;
-    const aspect = 2;
+    const aspect = this._width / this._height;
     const near = 0.1;
     const far = 1000;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    const x = Math.random() * 1000 - 500;
+    const y = Math.random() * 1000 - 500;
+    const z = Math.random() * 1000 - 500;
+    this._camera.position.set(x, y, z);
+    this._scene.add(this._camera);
   }
 
   _SetSound() {
     const listener = new THREE.AudioListener();
     const audioLoader = new THREE.AudioLoader();
-    
+
     this._lasersound = new THREE.Audio(listener);
     audioLoader.load('sounds/laser.wav', (buffer) => {
       this._lasersound.setBuffer(buffer);
     });
-     
+
     this._bombsound = new THREE.Audio(listener);
     audioLoader.load('sounds/bomb.wav', (buffer) => {
       this._bombsound.setBuffer(buffer);
@@ -340,7 +435,7 @@ class BattleGame {
       gltf.scene.scale.set(0.54, 0.54, 0.54);
       gltf.scene.rotation.y = Math.PI;
       gltf.scene.position.set(0, -0.1, -1.5);
-      
+
       this._model.add(gltf.scene);
       this._entities['player'] = new PlayerEntity(this);
 
@@ -362,9 +457,11 @@ class BattleGame {
   }
 
   _OnWindowResize() {
-    this._camera.aspect = window.innerWidth / window.innerHeight;
+    this._width = window.innerWidth;
+    this._height = window.innerHeight;
+    this._camera.aspect = this._width / this._height;
     this._camera.updateProjectionMatrix();
-    this._threejs.setSize(window.innerWidth, window.innerHeight);
+    this._threejs.setSize(this._width, this._height);
   }
 }
 
