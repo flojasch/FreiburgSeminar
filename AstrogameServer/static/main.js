@@ -17,6 +17,43 @@ import {
 
 let _APP = null;
 
+class FloatingName {
+  constructor(ship) {
+    this._ship = ship;
+    this.Init_();
+  }
+
+  Destroy() {
+    this.element_ = null;
+  }
+
+  Init_() {
+    this.element_ = document.createElement('canvas');
+    this.context2d_ = this.element_.getContext('2d');
+    this.context2d_.canvas.width = 256;
+    this.context2d_.canvas.height = 128;
+    this.context2d_.fillStyle = '#FFF';
+    this.context2d_.font = "18pt Helvetica";
+    this.context2d_.shadowOffsetX = 3;
+    this.context2d_.shadowOffsetY = 3;
+    this.context2d_.shadowColor = "rgba(0,0,0,0.3)";
+    this.context2d_.shadowBlur = 4;
+    this.context2d_.textAlign = 'center';
+    this.context2d_.fillText(this._ship._coords.name, 128, 64);
+
+    const map = new THREE.CanvasTexture(this.context2d_.canvas);
+
+    this.sprite_ = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: map,
+        color: 0xffffff
+      }));
+    this.sprite_.scale.set(6, 3, 1);
+    this.sprite_.position.y += 1.5;
+    this._ship._model.add(this.sprite_);
+  }
+};
+
 class PlayerEntity {
   constructor(game) {
     this._game = game;
@@ -25,10 +62,11 @@ class PlayerEntity {
     this._camera.add(game._model);
 
     game._model.position.set(0, -1.5, -3);
-
+    this._radius = 1.0;
     this._fireCooldown = 0.0;
     this._health = 1000.0;
-    this.SendCoords('new_player');
+    this._game.socket.emit('new_player', this.Coords);
+    this._health=2.0;
   }
 
   get Position() {
@@ -36,20 +74,15 @@ class PlayerEntity {
     this._model.getWorldPosition(pos);
     return pos;
   }
-  get Radius() {
-    return 1.0;
-  }
-  get Health() {
-    return this._health;
-  }
-  get Dead() {
-    return (this._health <= 0.0);
-  }
-  SendCoords(label) {
-    const r = this.Position;
+  get Quaternion() {
     const Q = new THREE.Quaternion;
     this._model.getWorldQuaternion(Q);
-    this._game.socket.emit(label, {
+    return Q;
+  }
+  get Coords() {
+    const r = this.Position;
+    const Q = this.Quaternion;
+    return {
       x: r.x,
       y: r.y,
       z: r.z,
@@ -57,52 +90,70 @@ class PlayerEntity {
       qy: Q.y,
       qz: Q.z,
       qw: Q.w,
-    });
+      name: this._game._name,
+    };
   }
-  TakeDamage(dmg) {
-    this._game._entities['_explosionSystem'].Splode(this.Position);
-    this._health -= dmg;
-  }
+
   Fire() {
     if (this._fireCooldown > 0.0) {
       return;
     }
     this._fireCooldown = 0.3;
     this._game._entities['_blaster']._Push(new objects.BlasterSystem({
-      model: this._game._model,
+      coords: this.Coords,
       scene: this._game._scene,
       sound: this._game._lasersound,
     }));
+    this._game.socket.emit('new_blaster', this.Coords);
   }
   Update(timeInSeconds) {
-    if (this.Dead) {
-      return;
-    }
     this._fireCooldown -= timeInSeconds;
-    this.SendCoords('player');
+    this._game.socket.emit('update_player', this.Coords);
+    if(this._health<0){
+      this._game.socket.emit('player_died',this._game.socket.id);
+      this._game._scene.remove(this._model);
+    }
+  }
+  _Hit(r) {
+    r.sub(this.Position);
+    const isHit = (r.length() < this._radius);
+    if(isHit) this._health -=1.0;
+    return isHit;
   }
 }
 
 class OtherPlayers {
   constructor(game) {
-    this._game=game;
+    this._game = game;
     this._ships = [];
   }
   _Push(ship) {
     this._ships.push(ship);
   }
-
-  get Position() {
-    return new THREE.Vector3();
-  }
-  get Radius() {
-    return -1.0;
-  }
   Update(time) {
     this._ships.forEach((ship) => {
-      ship._coords=this._game._playersCoords[ship._id];
-      ship._UpdateCoords()
+      ship._coords = this._game._playersCoords[ship._id];
+      ship._UpdateCoords();
     });
+  }
+  _Hit(r) {
+    let ret = false;
+    this._ships.forEach((ship) => {
+      r.sub(ship._model.position);
+      ret = ret || (r.length() < ship._radius);
+    });
+    return ret;
+  }
+  _Remove(id) {
+    let index=0;
+    for (let i = 0; i < this._ships.length; i++) {
+      let ship = this._ships[i];
+      if (ship._id == id) {
+        ship._Remove();
+        index=i;
+      }
+    }
+    this._ships.splice(index, 1);
   }
 }
 
@@ -111,9 +162,11 @@ class Ship {
     this._model = new THREE.Object3D();
     this._scene = params.scene;
     this._coords = params.coords;
-    this._id=params.id;
+    this._id = params.id;
     this._CreateShip();
     this._UpdateCoords();
+    this._radius = 1.0;
+    this._name = new FloatingName(this);
   }
 
   _CreateShip() {
@@ -132,6 +185,29 @@ class Ship {
   }
   _Remove() {
     this._scene.remove(this._model);
+    this._name.Destroy();
+  }
+}
+
+class GetName {
+  constructor(game) {
+    this._game = game;
+    this._Init();
+  }
+  _Init() {
+    this._input = document.getElementById('name-input');
+    this._text = document.getElementById('name-text');
+    this._input.addEventListener('keydown', (e) => this._OnKeyDown(e), false);
+  }
+  _OnKeyDown(evt) {
+    if (evt.keyCode === 13) {
+      evt.preventDefault();
+      this._game._name = this._input.value;
+      this._input.remove();
+      this._text.remove();
+      this._game._CreatePlayer();
+      this._game._Socket();
+    }
   }
 }
 
@@ -157,7 +233,7 @@ class BattleGame {
     this._playersCoords = {};
     this.socket = io();
     this._Initialize();
-    this._Socket();
+    new GetName(this);
   }
 
   _Socket() {
@@ -178,6 +254,15 @@ class BattleGame {
       this._StepEntities(1 / 60);
       this._threejs.render(this._scene, this._camera);
     });
+    this.socket.on('new_blaster', (coords) => {
+      this._entities['_blaster']._Push(new objects.BlasterSystem({
+        coords: coords,
+        scene: this._scene,
+      }));
+    });
+    this.socket.on('player_deleted', (id) => {
+      this._entities['_otherPlayers']._Remove(id);
+    });
   }
 
   _StepEntities(time) {
@@ -191,7 +276,6 @@ class BattleGame {
     this._LoadBackground();
     this._SetLight();
     this._SetSound();
-    this._CreatePlayer();
 
     this._entities['_earth'] = new objects.Planet({
       scene: this._scene,

@@ -7,3 +7,18 @@ body {
   padding: 0;
   overscroll-behavior: none;
 }
+p{
+  margin-left: 1cm;
+  color: #ffffff;
+  font-family: "Arial";
+  font-weight: bold;
+  font-size: 30;
+}
+
+input{
+  margin-left: 1cm;
+  color: #000000;
+  font-family: "Arial";
+  font-weight: bold;
+  font-size: 20;
+}

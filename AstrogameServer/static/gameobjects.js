@@ -26,9 +26,9 @@ class _Blaster {
     });
   }
   _RemoveOld(blaSys) {
-    if (!blaSys.isAlive) {
+    if (!blaSys._isAlive) {
       this._blaster.splice(this._blaster.indexOf(blaSys), 1);
-      this._scene.remove(blaSys.obj);
+      this._scene.remove(blaSys._obj);
     }
   }
   _Hits(blaSys) {
@@ -36,67 +36,61 @@ class _Blaster {
       const r = blaSys.Position;
       if (blaSys._Hit(this._entities[name])) {
         this._entities['_explosionSystem'].Splode(r);
-        blaSys.isAlive = false;
+        blaSys._isAlive = false;
       }
     }
   }
-
-  get Position() {
-    return new THREE.Vector3();
-  }
-  get Radius() {
-    return -1; //kann nicht getroffen werden
+  _Hit(r){
+    return false;
   }
 }
 
 class _BlasterSystem {
   constructor(params) {
-    this.model = params.model;
-    this.scene = params.scene;
+    this._coords = params.coords;
+    this._scene = params.scene;
     this._vel = new THREE.Vector3(0, 0, 70);
     const Q = new THREE.Quaternion;
-    this.model.getWorldQuaternion(Q);
+    Q.set(this._coords.qx,this._coords.qy,this._coords.qz,this._coords.qw);
     this._vel.applyQuaternion(Q);
     const pos = new THREE.Vector3();
-    this.model.getWorldPosition(pos);
+    pos.set(this._coords.x,this._coords.y,this._coords.z);
     const material = new THREE.MeshBasicMaterial({
       color: 0xff00ff
     });
     const geometry = new THREE.CylinderGeometry(0.02, 0.02, 2, 10);
 
-    this.obj = new THREE.Object3D();
-    this.obj.position.copy(pos);
-    this.obj.quaternion.copy(Q);
+    this._obj = new THREE.Object3D();
+    this._obj.position.copy(pos);
+    this._obj.quaternion.copy(Q);
 
     for (let i = 0; i < 2; ++i)
       for (let j = 0; j < 2; ++j) {
         let cyl = new THREE.Mesh(geometry, material);
         cyl.rotation.x = -Math.PI / 2;
         cyl.position.set(-1 + i * 2, -0.1 + j * 0.6, 0);
-        this.obj.add(cyl);
+        this._obj.add(cyl);
       }
-    this.scene.add(this.obj);
-    this.liveTime = 0.0;
-    this.isAlive = true;
-    params.sound.play();
+    this._scene.add(this._obj);
+    this._liveTime = 0.0;
+    this._isAlive = true;
+    if(params.sound) params.sound.play();
   }
   Update(timeInSeconds) {
     const dR = this._vel.clone();
     dR.multiplyScalar(timeInSeconds);
-    this.obj.position.sub(dR);
-    this.liveTime += timeInSeconds;
-    if (this.liveTime > 4.0)
-      this.isAlive = false;
+    this._obj.position.sub(dR);
+    this._liveTime += timeInSeconds;
+    if (this._liveTime > 4.0)
+      this._isAlive = false;
   }
 
   _Hit(entity) {
-    const r = entity.Position.clone();
-    r.sub(this.obj.position);
-    return (r.length() < entity.Radius);
+    return entity._Hit(this._obj.position.clone());
   }
 
   get Position() {
-    return this.obj.position.clone();
+    return this._obj.position.clone();
   }
 
 }
@@ -119,11 +113,9 @@ class _Planet {
   Update(time) {
 
   }
-  get Position() {
-    return this._position;
-  }
-  get Radius() {
-    return this._radius;
+  _Hit(r){
+    r.sub(this._position);
+    return (r.length()<this._radius);
   }
 }
 
@@ -188,11 +180,8 @@ class _ExplodeParticles {
     }
     this._particleSystem.Update();
   }
-  get Position() {
-    return new THREE.Vector3();
-  }
-  get Radius() {
-    return -1; //kann nicht getroffen werden
+  _Hit(r){
+    return false;
   }
 };
 return {

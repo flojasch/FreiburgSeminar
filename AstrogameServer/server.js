@@ -19,26 +19,29 @@ server.listen(5000, function () {
 // http://localhost:5000
 
 var players = {};
-io.on('connection', function (socket) {
-  socket.on('new_player', function (player) {
+io.on('connection', (socket)=> {
+  socket.on('new_player', (player)=> {
     players[socket.id] = player;
     console.log('user '+  socket.id+' connected');
-    console.log(players);
   });
-  socket.on('deleteplayer', function (id) {
-    delete players[id];
+  socket.on('new_blaster',(coords)=>{
+    io.sockets.emit('new_blaster',coords);
   });
-  socket.on('player', function (player) {
+  socket.on('update_player', (player)=> {
     players[socket.id]=player;
     
   });
+  socket.on('player_died', (id)=> {
+    io.sockets.emit('player_deleted',id);
+    delete players[id];
+  });
   socket.on('disconnect', () => {
     console.log('user ' + socket.id + ' disconnected');
+    io.sockets.emit('player_deleted',socket.id);
     delete players[socket.id];
   });
 });
 
-
-setInterval(function () {
+setInterval(()=> {
   io.sockets.emit('state', players);
 }, 1000 / 60);

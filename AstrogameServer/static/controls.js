@@ -158,11 +158,8 @@ export const controls = (function () {
       if (!this._move.up && !this._move.down) model.rotation.x -= 0.1 * model.rotation.x;
     }
 
-    get Position(){
-      return new THREE.Vector3();
-    }
-    get Radius(){
-      return -1;//kann nicht getroffen werden
+    _Hit(r){
+      return false;
     }
   
   }
