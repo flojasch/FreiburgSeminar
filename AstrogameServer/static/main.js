@@ -54,6 +54,26 @@ class FloatingName {
   }
 };
 
+class GameData {
+  constructor(player) {
+    this._player = player;
+    this._scoreElem = document.getElementById('score');
+    this._scoreElem.innerHTML = 'Score: ' + player._score;
+    this._liveElem = document.getElementById('lives');
+    this._liveElem.innerHTML = 'Health: ' + player._health;
+    this._gameOverElem = document.getElementById('gameover');
+  }
+  Update() {
+    this._scoreElem.innerHTML = 'Score:' + this._player._score;
+    this._liveElem.innerHTML = 'Health: ' + this._player._health;
+    if (this._player._health < 0) {
+      this._gameOverElem.innerHTML = '<p style="color:red; font-size:50px;" >GAME OVER</p>';
+
+    }
+  }
+
+}
+
 class PlayerEntity {
   constructor(game) {
     this._game = game;
@@ -64,9 +84,10 @@ class PlayerEntity {
     game._model.position.set(0, -1.5, -3);
     this._radius = 1.0;
     this._fireCooldown = 0.0;
-    this._health = 1000.0;
     this._game.socket.emit('new_player', this.Coords);
-    this._health=2.0;
+    this._health = 2;
+    this._score = 0;
+    this._gameData = new GameData(this);
   }
 
   get Position() {
@@ -91,6 +112,7 @@ class PlayerEntity {
       qz: Q.z,
       qw: Q.w,
       name: this._game._name,
+      id: this._game.socket.id,
     };
   }
 
@@ -106,19 +128,27 @@ class PlayerEntity {
     }));
     this._game.socket.emit('new_blaster', this.Coords);
   }
+
   Update(timeInSeconds) {
     this._fireCooldown -= timeInSeconds;
     this._game.socket.emit('update_player', this.Coords);
-    if(this._health<0){
-      this._game.socket.emit('player_died',this._game.socket.id);
-      this._game._scene.remove(this._model);
+    if (this._health < 0) {
+      this._Destroy();
     }
+    this._gameData.Update();
   }
+
   _Hit(r) {
     r.sub(this.Position);
     const isHit = (r.length() < this._radius);
-    if(isHit) this._health -=1.0;
     return isHit;
+  }
+
+  _Destroy() {
+    this._camera.remove(this._model);
+    this._game.socket.emit('player_died', this._game.socket.id);
+    delete this._game._entities['controls'];
+    delete this._game._entities['player'];
   }
 }
 
@@ -145,12 +175,12 @@ class OtherPlayers {
     return ret;
   }
   _Remove(id) {
-    let index=0;
+    let index = 0;
     for (let i = 0; i < this._ships.length; i++) {
       let ship = this._ships[i];
       if (ship._id == id) {
         ship._Remove();
-        index=i;
+        index = i;
       }
     }
     this._ships.splice(index, 1);
@@ -171,7 +201,7 @@ class Ship {
 
   _CreateShip() {
     const loader = new GLTFLoader();
-    loader.load('static/models/scene.gltf', (gltf) => {
+    loader.load('static/models/xwing-gltf/scene.gltf', (gltf) => {
       gltf.scene.scale.set(0.54, 0.54, 0.54);
       gltf.scene.rotation.y = Math.PI;
       gltf.scene.position.set(0, -0.1, -1.5);
@@ -255,10 +285,12 @@ class BattleGame {
       this._threejs.render(this._scene, this._camera);
     });
     this.socket.on('new_blaster', (coords) => {
-      this._entities['_blaster']._Push(new objects.BlasterSystem({
-        coords: coords,
-        scene: this._scene,
-      }));
+      if (coords.id != this.socket.id) {
+        this._entities['_blaster']._Push(new objects.BlasterSystem({
+          coords: coords,
+          scene: this._scene,
+        }));
+      }
     });
     this.socket.on('player_deleted', (id) => {
       this._entities['_otherPlayers']._Remove(id);
@@ -294,16 +326,16 @@ class BattleGame {
     const near = 0.1;
     const far = 1000;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    const x = Math.random() * 1000 - 500;
-    const y = Math.random() * 1000 - 500;
-    const z = Math.random() * 1000 - 500;
+    const x = Math.random() * 100 + 500;
+    const y = Math.random() * 100 + 500;
+    const z = Math.random() * 100 + 500;
     this._camera.position.set(0, 0, 500);
     this._scene.add(this._camera);
   }
 
   _CreatePlayer() {
     const loader = new GLTFLoader();
-    loader.load('static/models/scene.gltf', (gltf) => {
+    loader.load('static/models/xwing-gltf/scene.gltf', (gltf) => {
       gltf.scene.scale.set(0.54, 0.54, 0.54);
       gltf.scene.rotation.y = Math.PI;
       gltf.scene.position.set(0, -0.1, -1.5);
