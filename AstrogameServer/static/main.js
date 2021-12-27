@@ -17,6 +17,25 @@ import {
 
 let _APP = null;
 
+function _CreateShip(params) {
+  let file;
+  let scale;
+  if (params.ship == 'xwing') {
+    file = 'xwing-gltf';
+    scale = 0.54;
+  } else if (params.ship == 'tie') {
+    file = 'tie-fighter-gltf';
+    scale = 0.03;
+  }
+  const loader = new GLTFLoader();
+  loader.load('static/models/' + file + '/scene.gltf', (gltf) => {
+    gltf.scene.scale.multiplyScalar(scale);
+    gltf.scene.rotation.y = Math.PI;
+    gltf.scene.position.set(0, -0.1, -1.5);
+    params.model.add(gltf.scene);
+  });
+}
+
 class FloatingName {
   constructor(ship) {
     this._ship = ship;
@@ -71,23 +90,23 @@ class GameData {
 
     }
   }
-
 }
 
 class PlayerEntity {
   constructor(game) {
     this._game = game;
-    this._model = game._model;
+    this._model = new THREE.Object3D();
+    this._model.position.set(0, -1.5, -3);
     this._camera = game._camera;
-    this._camera.add(game._model);
-
-    game._model.position.set(0, -1.5, -3);
+    this._camera.add(this._model);
     this._radius = 1.0;
     this._fireCooldown = 0.0;
-    this._game.socket.emit('new_player', this.Coords);
     this._health = 2;
     this._score = 0;
     this._gameData = new GameData(this);
+    this._ship = 'xwing';
+    if (Math.random() > 0.5) this._ship = 'tie';
+    new GetName(this);
   }
 
   get Position() {
@@ -111,9 +130,19 @@ class PlayerEntity {
       qy: Q.y,
       qz: Q.z,
       qw: Q.w,
-      name: this._game._name,
+      name: this._name,
       id: this._game.socket.id,
+      ship: this._ship,
     };
+  }
+
+  StartGame() {
+    this._game.socket.emit('new_player', this.Coords);
+    _CreateShip({
+      model: this._model,
+      ship: this._ship,
+    });
+    this._game._Socket();
   }
 
   Fire() {
@@ -189,25 +218,22 @@ class OtherPlayers {
 
 class Ship {
   constructor(params) {
-    this._model = new THREE.Object3D();
-    this._scene = params.scene;
+    this._scene = params.game._scene;
     this._coords = params.coords;
+    this._model = new THREE.Object3D();
+    this._scene.add(this._model);
     this._id = params.id;
-    this._CreateShip();
     this._UpdateCoords();
     this._radius = 1.0;
     this._name = new FloatingName(this);
-  }
-
-  _CreateShip() {
-    const loader = new GLTFLoader();
-    loader.load('static/models/xwing-gltf/scene.gltf', (gltf) => {
-      gltf.scene.scale.set(0.54, 0.54, 0.54);
-      gltf.scene.rotation.y = Math.PI;
-      gltf.scene.position.set(0, -0.1, -1.5);
-      this._model.add(gltf.scene);
-      this._scene.add(this._model);
+    _CreateShip({
+      model: this._model,
+      ship: this._coords.ship,
     });
+
+  }
+  get Coords() {
+    return this._coords;
   }
   _UpdateCoords() {
     this._model.position.set(this._coords.x, this._coords.y, this._coords.z);
@@ -220,8 +246,8 @@ class Ship {
 }
 
 class GetName {
-  constructor(game) {
-    this._game = game;
+  constructor(player) {
+    this._player = player;
     this._Init();
   }
   _Init() {
@@ -232,11 +258,10 @@ class GetName {
   _OnKeyDown(evt) {
     if (evt.keyCode === 13) {
       evt.preventDefault();
-      this._game._name = this._input.value;
+      this._player._name = this._input.value;
       this._input.remove();
       this._text.remove();
-      this._game._CreatePlayer();
-      this._game._Socket();
+      this._player.StartGame();
     }
   }
 }
@@ -259,11 +284,10 @@ class BattleGame {
     }, false);
     this._scene = new THREE.Scene();
     this._entities = {};
-    this._model = new THREE.Object3D();
     this._playersCoords = {};
     this.socket = io();
     this._Initialize();
-    new GetName(this);
+
   }
 
   _Socket() {
@@ -272,8 +296,8 @@ class BattleGame {
         if (this._playersCoords[id] == null && id != this.socket.id) {
           this._playersCoords[id] = playersCoords[id];
           const ship = new Ship({
-            scene: this._scene,
             coords: this._playersCoords[id],
+            game: this,
             id: id,
           });
           this._entities['_otherPlayers']._Push(ship);
@@ -309,6 +333,7 @@ class BattleGame {
     this._SetLight();
     this._SetSound();
 
+
     this._entities['_earth'] = new objects.Planet({
       scene: this._scene,
       position: new THREE.Vector3()
@@ -318,6 +343,9 @@ class BattleGame {
     this._entities['_blaster'] = new objects.Blaster(this);
     //this._entities['_menger']=new menger.Menger(this._camera);
     this._entities['_otherPlayers'] = new OtherPlayers(this);
+    this._entities['player'] = new PlayerEntity(this);
+    this._entities['controls'] = new controls.Controls(this._entities['player']);
+
   }
 
   _SetCamera() {
@@ -331,20 +359,6 @@ class BattleGame {
     const z = Math.random() * 100 + 500;
     this._camera.position.set(0, 0, 500);
     this._scene.add(this._camera);
-  }
-
-  _CreatePlayer() {
-    const loader = new GLTFLoader();
-    loader.load('static/models/xwing-gltf/scene.gltf', (gltf) => {
-      gltf.scene.scale.set(0.54, 0.54, 0.54);
-      gltf.scene.rotation.y = Math.PI;
-      gltf.scene.position.set(0, -0.1, -1.5);
-
-      this._model.add(gltf.scene);
-      this._entities['player'] = new PlayerEntity(this);
-
-      this._entities['controls'] = new controls.Controls(this._entities['player']);
-    });
   }
 
   _SetSound() {
