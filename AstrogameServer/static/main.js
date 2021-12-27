@@ -73,18 +73,46 @@ class FloatingName {
   }
 };
 
-class GameData {
+class GameGui {
   constructor(player) {
     this._player = player;
-    this._scoreElem = document.getElementById('score');
-    this._scoreElem.innerHTML = 'Score: ' + player._score;
-    this._liveElem = document.getElementById('lives');
-    this._liveElem.innerHTML = 'Health: ' + player._health;
+    const guiDiv = document.createElement('div');
+    guiDiv.className = 'guiRoot guiBox';
+
+    const scoreDiv = document.createElement('div');
+    scoreDiv.className = 'vertical';
+
+    const scoreTitle = document.createElement('div');
+    scoreTitle.className = 'guiBigText';
+    scoreTitle.innerText = 'SCORE';
+
+    const scoreText = document.createElement('div');
+    scoreText.className = 'guiSmallText';
+    scoreText.innerText = '0';
+    scoreText.id = 'scoreText';
+
+    const healthTitle = document.createElement('div');
+    healthTitle.className = 'guiBigText';
+    healthTitle.innerText = 'HEALTH';
+
+    const healthText = document.createElement('div');
+    healthText.className = 'guiSmallText';
+    healthText.innerText = '2';
+    healthText.id = 'healthText';
+
+    scoreDiv.appendChild(scoreTitle);
+    scoreDiv.appendChild(scoreText);
+    scoreDiv.appendChild(healthTitle);
+    scoreDiv.appendChild(healthText);
+
+    guiDiv.appendChild(scoreDiv);
+    document.body.appendChild(guiDiv);  
+
     this._gameOverElem = document.getElementById('gameover');
   }
   Update() {
-    this._scoreElem.innerHTML = 'Score:' + this._player._score;
-    this._liveElem.innerHTML = 'Health: ' + this._player._health;
+    document.getElementById('scoreText').innerText = this._player._score;
+    document.getElementById('healthText').innerText= this._player._health;
     if (this._player._health < 0) {
       this._gameOverElem.innerHTML = '<p style="color:red; font-size:50px;" >GAME OVER</p>';
 
@@ -103,7 +131,6 @@ class PlayerEntity {
     this._fireCooldown = 0.0;
     this._health = 2;
     this._score = 0;
-    this._gameData = new GameData(this);
     this._ship = 'xwing';
     if (Math.random() > 0.5) this._ship = 'tie';
     new GetName(this);
@@ -137,6 +164,7 @@ class PlayerEntity {
   }
 
   StartGame() {
+    this._gameGui = new GameGui(this);
     this._game.socket.emit('new_player', this.Coords);
     _CreateShip({
       model: this._model,
@@ -164,7 +192,7 @@ class PlayerEntity {
     if (this._health < 0) {
       this._Destroy();
     }
-    this._gameData.Update();
+    this._gameGui.Update();
   }
 
   _Hit(r) {

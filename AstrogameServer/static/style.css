@@ -22,3 +22,42 @@ input{
   font-weight: bold;
   font-size: 20;
 }
+
+.guiRoot {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  cursor: pointer;
+  z-index: 10000;
+}
+
+.guiBox {
+  background: #0b1e2a;
+  mix-blend-mode: screen;
+  border-radius: 5px;
+  border-style: double;
+  border-color: #173869;
+  height: 90px;
+  width: 120px;
+}
+
+.guiBigText {
+  font-family: 'Teko', sans-serif;
+  font-size: 1.4em;
+  color: #e3f9ff;
+  mix-blend-mode: lighten;
+}
+
+.guiSmallText {
+  font-family: 'Teko', sans-serif;
+  font-size: 1em;
+  color: #e3f9ff;
+  mix-blend-mode: lighten;
+}
+
+.vertical {
+  display: flex;
+  flex-direction: column;
+  margin-left: 1em;
+}
+
