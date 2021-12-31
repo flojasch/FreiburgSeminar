@@ -48,6 +48,16 @@ input{
   mix-blend-mode: lighten;
 }
 
+.veryBigText {
+  position: absolute;
+  top: 300px;
+  left: 300px;
+  font-family: 'Teko', sans-serif;
+  font-size: 5em;
+  color: #ff0000;
+  mix-blend-mode: lighten;
+}
+
 .guiSmallText {
   font-family: 'Teko', sans-serif;
   font-size: 1em;
@@ -61,3 +71,29 @@ input{
   margin-left: 1em;
 }
 
+#target {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute;
+}
+
+.welcomeText {
+  font-family: 'Teko', sans-serif;
+  font-size: 1.4em;
+  color: #e4ecee;
+  mix-blend-mode: lighten;
+ 
+}
+
+.welcomeBox {
+  background: #0b1e2a;
+  mix-blend-mode: screen;
+  border-radius: 5px;
+  border-style: double;
+  border-color: #173869;
+  height: 100px;
+  width: 400px;
+  position: absolute;
+  top: 50px;
+  left: 50px;
+}

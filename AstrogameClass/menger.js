@@ -3,9 +3,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 export const menger = (function () {
 
   class _Menger {
-  constructor(camera) {
-    this._camera=camera;
-    const fragmentShader = `
+    constructor(camera) {
+      this._camera = camera;
+      const fragmentShader = `
   #include <common>
  
   uniform vec3 iResolution;
@@ -19,7 +19,7 @@ export const menger = (function () {
   #define MAX_STEPS 100
   #define MAX_DIST 1000.
   #define SURF_DIST .01
-  #define MAX_ITER 5
+  #define MAX_ITER 7
   
   float sdBox( vec3 p, vec3 b )
   {
@@ -50,11 +50,15 @@ export const menger = (function () {
   float sdMenger(vec3 p){
       float size=50.; 
       vec3[] s = vec3[](vec3(1,1,1),vec3(1,1,0));
+      float alpha=0.5*3.14; 
+      float beta=0.03*3.14*iTime; 
+
+      p=rotateX(p,beta);
+      p=rotateY(p,alpha);
       
       for(int iter=0;iter<MAX_ITER;++iter){
-          float alpha=0.03*iTime; 
+          
           p=rotateY(p,alpha);
-          float beta=0.07*iTime; 
           p=rotateX(p,beta);
          
           p=abs(p);
@@ -152,69 +156,69 @@ void main() {
   mainImage(gl_FragColor, gl_FragCoord.xy);
 }
 `;
-    this.uniforms = {
-      iTime: {
-        value: 0
-      },
-      iResolution: {
-        value: new THREE.Vector3()
-      },
-      az: {
-        value: new THREE.Vector3()
-      },
-      ay: {
-        value: new THREE.Vector3()
-      },
-      ax: {
-        value: new THREE.Vector3()
-      },
-      ro: {
-        value: new THREE.Vector3()
-      }
-    };
+ 
+      this.uniforms = {
+        iTime: {
+          value: 0
+        },
+        iResolution: {
+          value: new THREE.Vector3()
+        },
+        az: {
+          value: new THREE.Vector3()
+        },
+        ay: {
+          value: new THREE.Vector3()
+        },
+        ax: {
+          value: new THREE.Vector3()
+        },
+        ro: {
+          value: new THREE.Vector3()
+        }
+      };
 
-    const material = new THREE.ShaderMaterial({
-      fragmentShader: fragmentShader,
-      uniforms: this.uniforms,
-      transparent: true,
-    });
+      const material = new THREE.ShaderMaterial({
+        fragmentShader: fragmentShader,
+        uniforms: this.uniforms,
+        transparent: true,
+      });
 
-    const plane = new THREE.PlaneGeometry(8 * window.innerWidth / window.innerHeight, 8);
-    const planeMesh = new THREE.Mesh(plane, material);
-    planeMesh.position.set(0, 0, -5);
-    this._camera.add(planeMesh);
+      const geometry = new THREE.PlaneGeometry(8 * window.innerWidth / window.innerHeight, 8);
+      const planeMesh = new THREE.Mesh(geometry, material);
+      planeMesh.position.set(0, 0, -5);
+      this._camera.add(planeMesh);
+    }
+
+    Update(time) {
+      this.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight, 1);
+      this.uniforms.iTime.value += 0.01;
+      const A = new THREE.Vector3();
+      const Q = this._camera.quaternion.clone();
+      A.set(1, 0, 0);
+      A.applyQuaternion(Q);
+      this.uniforms.ax.value.copy(A);
+      A.set(0, 1, 0);
+      A.applyQuaternion(Q);
+      this.uniforms.ay.value.copy(A);
+      A.set(0, 0, 1);
+      A.applyQuaternion(Q);
+      this.uniforms.az.value.copy(A);
+      const pos = new THREE.Vector3();
+      pos.sub(this._camera.position);
+      this.uniforms.ro.value = pos;
+    }
+
+    get Position() {
+      return new THREE.Vector3();
+    }
+    get Radius() {
+      return -1; //kann nicht getroffen werden
+    }
+
   }
 
-  Update(time) {
-    this.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight, 1);
-    this.uniforms.iTime.value += time;
-    const A = new THREE.Vector3();
-    const Q = this._camera.quaternion.clone();
-    A.set(1, 0, 0);
-    A.applyQuaternion(Q);
-    this.uniforms.ax.value.copy(A);
-    A.set(0, 1, 0);
-    A.applyQuaternion(Q);
-    this.uniforms.ay.value.copy(A);
-    A.set(0, 0, 1);
-    A.applyQuaternion(Q);
-    this.uniforms.az.value.copy(A);
-    const pos = new THREE.Vector3();
-    pos.sub(this._camera.position);
-    this.uniforms.ro.value = pos;
-  }
-
-  get Position(){
-    return new THREE.Vector3();
-  }
-  get Radius(){
-    return -1;//kann nicht getroffen werden
-  }
-
-}
-
-
-return {
-  Menger: _Menger,
-};
+  return {
+    Menger: _Menger,
+  };
 })();

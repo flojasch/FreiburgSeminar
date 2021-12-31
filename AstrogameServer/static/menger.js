@@ -49,12 +49,16 @@ export const menger = (function () {
   
   float sdMenger(vec3 p){
       float size=50.; 
+      float alpha=0.5*3.14; 
+      float beta=0.03*3.14*iTime;
+
+      p=rotateX(p,beta);
+      p=rotateY(p,alpha);
+
       vec3[] s = vec3[](vec3(1,1,1),vec3(1,1,0));
       
       for(int iter=0;iter<MAX_ITER;++iter){
-          float alpha=0.03*iTime; 
           p=rotateY(p,alpha);
-          float beta=0.07*iTime; 
           p=rotateX(p,beta);
          
           p=abs(p);
@@ -187,7 +191,7 @@ void main() {
 
   Update(time) {
     this.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight, 1);
-    this.uniforms.iTime.value += time;
+    this.uniforms.iTime.value += 0.01;
     const A = new THREE.Vector3();
     const Q = this._camera.quaternion.clone();
     A.set(1, 0, 0);
@@ -204,15 +208,11 @@ void main() {
     this.uniforms.ro.value = pos;
   }
 
-  get Position(){
-    return new THREE.Vector3();
-  }
-  get Radius(){
-    return -1;//kann nicht getroffen werden
+  _Hit(r){
+    return false;
   }
 
 }
-
 
 return {
   Menger: _Menger,

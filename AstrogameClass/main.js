@@ -316,7 +316,7 @@ class BattleGame {
 
     this._entities['_explosionSystem'] = new ExplodeParticles(this);
     this._entities['_blaster'] = new Blaster(this);
-    //this._entities['_menger']=new menger.Menger(this._camera);
+    this._entities['_menger']=new menger.Menger(this._camera);
   }
 
   _SetCamera() {

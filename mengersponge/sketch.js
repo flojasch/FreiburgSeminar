@@ -42,7 +42,7 @@ function main() {
   #define MAX_STEPS 100
   #define MAX_DIST 100.
   #define SURF_DIST .01
-  #define MAX_ITER 5
+  #define MAX_ITER 7
   
   float sdBox( vec3 p, vec3 b )
   {
@@ -75,13 +75,15 @@ function main() {
   float sdMenger(vec3 p){
       float size=2.;
       p.z -=3.;  
-      //p=rotateY(p,iTime*.5);
+      float alpha=0.5*3.14; 
+      float beta=0.03*3.14*iTime; 
+     
+      p=rotateX(p,beta);
+      p=rotateY(p,alpha);
       vec3[] s = vec3[](vec3(1,1,1),vec3(1,1,0));
       
       for(int iter=0;iter<MAX_ITER;++iter){
-          float alpha=0.03*3.14*iTime; 
           p=rotateY(p,alpha);
-          float beta=0.07*3.14*iTime; 
           p=rotateX(p,beta);
          
           p=abs(p);

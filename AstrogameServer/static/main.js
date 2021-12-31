@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118.1/build/three.module.js';
 
 import {
   GLTFLoader
@@ -106,16 +106,17 @@ class GameGui {
     scoreDiv.appendChild(healthText);
 
     guiDiv.appendChild(scoreDiv);
-    document.body.appendChild(guiDiv);  
+    document.body.appendChild(guiDiv);
 
-    this._gameOverElem = document.getElementById('gameover');
   }
   Update() {
     document.getElementById('scoreText').innerText = this._player._score;
-    document.getElementById('healthText').innerText= this._player._health;
+    document.getElementById('healthText').innerText = this._player._health;
     if (this._player._health < 0) {
-      this._gameOverElem.innerHTML = '<p style="color:red; font-size:50px;" >GAME OVER</p>';
-
+      const gameOver = document.createElement('div');
+      gameOver.className = 'veryBigText';
+      gameOver.innerText = 'GAME OVER';
+      document.body.appendChild(gameOver);
     }
   }
 }
@@ -124,7 +125,7 @@ class PlayerEntity {
   constructor(game) {
     this._game = game;
     this._model = new THREE.Object3D();
-    this._model.position.set(0, -1.5, -3);
+    this._model.position.set(0, -1.3, -3);
     this._camera = game._camera;
     this._camera.add(this._model);
     this._radius = 1.0;
@@ -133,7 +134,7 @@ class PlayerEntity {
     this._score = 0;
     this._ship = 'xwing';
     if (Math.random() > 0.5) this._ship = 'tie';
-    new GetName(this);
+    this.GetName();
   }
 
   get Position() {
@@ -161,6 +162,27 @@ class PlayerEntity {
       id: this._game.socket.id,
       ship: this._ship,
     };
+  }
+
+  GetName() {
+    const text = document.createElement('div');
+    text.className = 'welcomeText';
+    text.innerText = 'Willkommen zum Astrobattle Royale. \n Gib hier deinen Namen ein.'
+    const welcomeDiv = document.createElement('div');
+    welcomeDiv.className = 'welcomeBox';
+    const input = document.createElement('input');
+    input.setAttribute('type', 'text');
+    welcomeDiv.appendChild(text);
+    welcomeDiv.appendChild(input);
+    document.body.appendChild(welcomeDiv);
+    input.addEventListener('keydown', (evt) => {
+      if (evt.keyCode === 13) {
+        evt.preventDefault();
+        this._name = input.value;
+        welcomeDiv.remove();
+        this.StartGame();
+      }
+    }, false);
   }
 
   StartGame() {
@@ -273,39 +295,19 @@ class Ship {
   }
 }
 
-class GetName {
-  constructor(player) {
-    this._player = player;
-    this._Init();
-  }
-  _Init() {
-    this._input = document.getElementById('name-input');
-    this._text = document.getElementById('name-text');
-    this._input.addEventListener('keydown', (e) => this._OnKeyDown(e), false);
-  }
-  _OnKeyDown(evt) {
-    if (evt.keyCode === 13) {
-      evt.preventDefault();
-      this._player._name = this._input.value;
-      this._input.remove();
-      this._text.remove();
-      this._player.StartGame();
-    }
-  }
-}
-
 class BattleGame {
   constructor() {
+
     this._threejs = new THREE.WebGLRenderer({
       antialias: true,
     });
-
-    this._threejs.setPixelRatio(window.devicePixelRatio);
     this._width = window.innerWidth;
     this._height = window.innerHeight;
+    this._threejs.setPixelRatio(window.devicePixelRatio);
     this._threejs.setSize(this._width, this._height);
 
-    document.body.appendChild(this._threejs.domElement);
+    const target = document.getElementById('target');
+    target.appendChild(this._threejs.domElement);
 
     window.addEventListener('resize', () => {
       this._OnWindowResize();
@@ -361,12 +363,10 @@ class BattleGame {
     this._SetLight();
     this._SetSound();
 
-
     this._entities['_earth'] = new objects.Planet({
       scene: this._scene,
       position: new THREE.Vector3()
     })
-
     this._entities['_explosionSystem'] = new objects.ExplodeParticles(this);
     this._entities['_blaster'] = new objects.Blaster(this);
     //this._entities['_menger']=new menger.Menger(this._camera);
