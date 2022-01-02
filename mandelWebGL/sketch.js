@@ -48,13 +48,13 @@ float distanceToMandelbrot( in vec2 c )
     
 
     // iterate
-    float di =  1.0;
     vec2 z  = vec2(0.0);
     float m2 = 0.0;
     vec2 dz = vec2(0.0);
-    for( int i=0; i<1000; i++ )
+    int i;
+    for( i=0; i<1000; i++ )
     {
-        if( m2>1024.0 ) { di=0.0; break; }
+        if( m2>1024.0 ) { break; }
 
 		// Z' -> 2·Z·Z' + 1
         dz = 2.0*vec2(z.x*dz.x-z.y*dz.y, z.x*dz.y + z.y*dz.x) + vec2(1.0,0.0);
@@ -67,8 +67,8 @@ float distanceToMandelbrot( in vec2 c )
 
     // distance	
 	// d(c) = |Z|·log|Z|/|Z'|
-	float d = 0.5*sqrt(dot(z,z)/dot(dz,dz))*log(dot(z,z));
-    if( di>0.5 ) d=0.0;
+	float d = 0.5*sqrt(m2/dot(dz,dz))*log(m2);
+    if(i==1000) d=0.0;
 	
     return d;
 }

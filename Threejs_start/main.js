@@ -4,12 +4,12 @@ import {
 } from 'https://threejsfundamentals.org/threejs/resources/threejs/r132/examples/jsm/loaders/GLTFLoader.js';
 
 class _Controls {
-  constructor(frame) {
-    this._Init(frame);
+  constructor(camera) {
+    this._Init(camera);
   }
 
-  _Init(frame) {
-    this.frame = frame;
+  _Init(camera) {
+    this.camera = camera;
     this._move = {
       left: false,
       right: false,
@@ -51,10 +51,6 @@ class _Controls {
       case 83: //s
         this._move.backward = true;
         break;
-      case 32: //space
-        this._move.fire = true;
-        break;
-
     }
   }
 
@@ -84,15 +80,12 @@ class _Controls {
       case 83: //s
         this._move.backward = false;
         break;
-      case 32: //space
-        this._move.fire = false;
-        break;
     }
   }
 
   Update() {
     const ang = 0.01;
-    const cameraFrame = this.frame;
+    const cameraFrame = this.camera;
     const _Q = new THREE.Quaternion();
     const _A = new THREE.Vector3();
     const _R = cameraFrame.quaternion.clone();
@@ -154,13 +147,9 @@ class FirstGame {
       this._OnWindowResize();
     }, false);
 
-    this._camFrame = new THREE.Group();
-    this._camFrame.position.set(0, 0, 50);
     this._model = new THREE.Object3D();
-    this._camFrame.add(this._model);
     this._scene = new THREE.Scene();
-    this._scene.add(this._camFrame);
-    this._control = new _Controls(this._camFrame);
+  
     this._Init();
     this._RAF();
   }
@@ -175,11 +164,14 @@ class FirstGame {
 
   _SetCamera() {
     const fov = 75;
-    const aspect = 2;
+    const aspect = window.innerWidth/window.innerHeight;
     const near = 0.1;
     const far = 1000;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camFrame.add(this._camera);
+    this._camera.position.set(0,0,50);
+    this._camera.add(this._model);
+    this._scene.add(this._camera);
+    this._control = new _Controls(this._camera);
   }
 
   _SetLight() {
