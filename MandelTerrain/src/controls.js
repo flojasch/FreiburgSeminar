@@ -84,10 +84,10 @@ export const controls = (function () {
   
     Update(time) {
       const ang = time;
-      const cameraFrame = this._player._camera;
+      const camera = this._player._camera;
       const _Q = new THREE.Quaternion();
       const _A = new THREE.Vector3();
-      const _R = cameraFrame.quaternion.clone();
+      const _R = camera.quaternion.clone();
       const _vel = new THREE.Vector3(0, 0, .8);
       _vel.applyQuaternion(_R);
       if (this._move.left) {
@@ -121,12 +121,12 @@ export const controls = (function () {
         _R.multiply(_Q);
       }
       if (this._move.forward) {
-        cameraFrame.position.sub(_vel);
+        camera.position.sub(_vel);
       }
       if (this._move.backward) {
-        cameraFrame.position.add(_vel);
+        camera.position.add(_vel);
       }
-      cameraFrame.quaternion.copy(_R);
+      camera.quaternion.copy(_R);
      
     }
   

@@ -19,6 +19,8 @@ import {
 
 
 let _APP = null;
+const HEIGHT = 100;
+const TERRAIN_SIZE = 5000;
 
 class TerrainSky {
   constructor(params) {
@@ -86,16 +88,18 @@ class TerrainSky {
   Update(timeInSeconds) {}
 }
 
-
 class TerrainChunk {
   constructor(params) {
     this._params = params;
     this._offset = params.offset;
-    this._height = 60;
+    this._height = HEIGHT;
     this._power = 0.5;
-    this._res = 100;
+    this._res = 50;
     this._size = params.size;
     this._Init();
+  }
+  Destroy() {
+    this._params.group.remove(this._plane);
   }
 
   _Init() {
@@ -155,8 +159,8 @@ class TerrainChunk {
       n;
     let dx = 0,
       dy = 0;
-    cx = i * 3. / this._params.chunksize - 0.7;
-    cy = j * 3. / this._params.chunksize;
+    cx = i * 3. / this._params.terrainSize - 0.7;
+    cy = j * 3. / this._params.terrainSize;
     let c2 = cx * cx + cy * cy;
     if (256.0 * c2 * c2 - 96.0 * c2 + 32.0 * cx - 3.0 < 0.0) return 0.0;
     if (16.0 * (c2 + 2.0 * cx + 1.0) - 1.0 < 0.0) return 0.0;
@@ -182,10 +186,11 @@ class TerrainChunk {
 
 }
 
-class TerrainChunkManager {
+class Terrain {
   constructor(params) {
-    this._chunkSize = 500;
+    this._terrainSize = TERRAIN_SIZE;
     this._camera = params.camera;
+    this._camSec = new THREE.Vector3();
     this._Init(params);
   }
 
@@ -198,7 +203,7 @@ class TerrainChunkManager {
       wireframe: false,
     };
     params.guiParams.mandel = {
-      height: 60,
+      height: HEIGHT,
       power: 0.5,
     };
 
@@ -213,7 +218,7 @@ class TerrainChunkManager {
       }
     });
     const mandelRollup = params.gui.addFolder('Mandelbrot');
-    mandelRollup.add(params.guiParams.mandel, "height", 0.0, 100.0).onChange(() => {
+    mandelRollup.add(params.guiParams.mandel, "height", 0.0, 300.0).onChange(() => {
       for (let k in this._chunks) {
         this._chunks[k].chunk._height = params.guiParams.mandel.height;
         this._chunks[k].chunk.Rebuild();
@@ -226,29 +231,54 @@ class TerrainChunkManager {
       }
     });
 
-    const quadTree = new quadtree.QuadTree({
+    this._InitLeaves();
+  }
+
+  _InitLeaves() {
+    this.quadTree = new quadtree.QuadTree({
       cam: this._camera.position,
-      size: this._chunkSize,
+      size: this._terrainSize,
       x: 0,
       y: 0,
     });
-    const leaves = quadTree.GetLeaves();
-    const chunks = [];
-   
-    for (let l of leaves) {
-      console.log(l.x,l.y,l.size);
-      chunks.push(new TerrainChunk({
-          group: this._group,
-          offset: new THREE.Vector3(l.x, l.y, 0),
-          size: 2*l.size,
-          chunksize: this._chunkSize,
-        }));
-      }
+
+    this.leaves = this.quadTree.GetLeaves();
+    for (let l of this.leaves) {
+      l.chunk = new TerrainChunk({
+        group: this._group,
+        offset: new THREE.Vector3(l.x, l.y, 0),
+        size: 2 * l.size,
+        terrainSize: this._terrainSize,
+      });
+    }
   }
 
-  Update(timeInSeconds) {}
-}
+  Update(timeInSeconds) {
+    this._UpdateLeaves();
+  }
 
+  _UpdateLeaves() {
+    for (let k = this.leaves.length - 1; k > -1; k--) {
+      const l = this.leaves[k];
+      const newLeaves = this.quadTree.Update(l);
+      if (newLeaves.length > 0) {
+        l.chunk.Destroy();
+        this.leaves.splice(k, 1);
+
+        for (let nl of newLeaves) {
+          nl.chunk = new TerrainChunk({
+            group: this._group,
+            offset: new THREE.Vector3(nl.x, nl.y, 0),
+            size: 2 * nl.size,
+            terrainSize: this._terrainSize,
+          });
+          this.leaves.push(nl);
+        }
+      }
+    }
+  }
+
+}
 
 class ProceduralTerrain_Demo extends game.Game {
   constructor() {
@@ -259,7 +289,7 @@ class ProceduralTerrain_Demo extends game.Game {
     this._controls = this._CreateControls();
     this._CreateGUI();
 
-    this._entities['_terrain'] = new TerrainChunkManager({
+    this._entities['_terrain'] = new Terrain({
       scene: this._graphics.Scene,
       camera: this._graphics._camera,
       gui: this._gui,

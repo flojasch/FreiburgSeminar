@@ -3,7 +3,7 @@ export const quadtree = (function () {
   class QuadTree {
     constructor(params) {
       this._cam = params.cam;
-      this.MinSize = 100;
+      this.MinSize = 50;
       this._root = {
         children: [],
         x: params.x,
@@ -31,16 +31,26 @@ export const quadtree = (function () {
 
     Grow(children) {
       for (let child of children) {
-        let x = this._cam.x - child.x;
-        let y = this._cam.z - child.y;
-        let size = child.size ;
-        if (Math.abs(x) < size && Math.abs(y) < size) {
+        const x = this._cam.x - child.x;
+        const y = this._cam.z + child.y;
+        let rr=x*x+y*y;
+        if (rr < child.size*child.size*4) {
           this.Split(child);
-          if (size/2 > this.MinSize) {
+          if (child.size/2 > this.MinSize) {
             this.Grow(child.children);
           }
         }
       }
+    }
+
+    Update(node){
+      const x = this._cam.x - node.x;
+      const y = this._cam.z + node.y;
+      let rr=x*x+y*y;
+      if (rr < node.size*node.size*4 && node.size > this.MinSize) {
+        this.Split(node);
+      }
+      return node.children;
     }
 
     GrowTree() {
