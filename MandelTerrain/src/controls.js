@@ -88,7 +88,7 @@ export const controls = (function () {
       const _Q = new THREE.Quaternion();
       const _A = new THREE.Vector3();
       const _R = camera.quaternion.clone();
-      const _vel = new THREE.Vector3(0, 0, .8);
+      const _vel = new THREE.Vector3(0, 0, 30.0);
       _vel.applyQuaternion(_R);
       if (this._move.left) {
         _A.set(0, 1, 0);
