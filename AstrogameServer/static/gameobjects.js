@@ -5,12 +5,6 @@ import {
 import {
   math
 } from './math.js';
-import {
-  FontLoader
-} from 'https://threejs.org/examples/jsm/loaders/FontLoader.js';
-import {
-  TextGeometry
-} from 'https://threejs.org/examples/jsm/geometries/TextGeometry.js';
 
 export const objects = (function () {
 
@@ -34,8 +28,8 @@ export const objects = (function () {
     }
     _RemoveOld(blaSys) {
       if (!blaSys._isAlive) {
-        this._blaster.splice(this._blaster.indexOf(blaSys), 1);
         this._scene.remove(blaSys._obj);
+        this._blaster.splice(this._blaster.indexOf(blaSys), 1);
       }
     }
     _Hits(blaSys) {

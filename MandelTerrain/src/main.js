@@ -70,6 +70,7 @@ class Terrain {
   }
 
   Update(timeInSeconds) {
+    this.quadTree.Rebuild(this.quadTree._root);
     this.quadTree.Update(this.quadTree._root);
   }
 

@@ -130,7 +130,6 @@ export const quadtree = (function () {
             x: x,
             y: y,
             size: size,
-            adult: node,
           })
         }
       }
@@ -159,15 +158,40 @@ export const quadtree = (function () {
 
     Update(node) {
       if (node.children.length == 0) {
-        if (this.isClose(node) && node.size > 2 * MIN_SIZE) {
-          node.chunk.Destroy();
-          this.Grow(node);
+        if (this.isClose(node)) {
+          if (node.size > 2 * MIN_SIZE) {
+            node.chunk.Destroy();
+            delete node.chunk;
+            this.Grow(node);
+          }
         }
       } else
         for (let child of node.children)
           this.Update(child);
     }
 
+    DeleteChunks(node) {
+      for (let child of node.children) {
+        if (child.children.length == 0) {
+          child.chunk.Destroy();
+          delete child.chunk;
+        } else {
+          this.DeleteChunks(child);
+        }
+      }
+      node.children = [];
+    }
+
+    Rebuild(node) {
+      if (!this.isClose(node) && node.children.length != 0) {
+        console.log(node);
+        this.DeleteChunks(node);
+        this.Grow(node);
+      } else
+        for (let child of node.children) {
+          this.Rebuild(child);
+        }
+    }
   }
 
   return {
