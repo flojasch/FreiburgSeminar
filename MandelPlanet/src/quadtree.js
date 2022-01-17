@@ -2,9 +2,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.m
 
 export const quadtree = (function () {
 
-  const TERRAIN_SIZE = 50000;
+  const TERRAIN_SIZE = 500;
   const MIN_SIZE = 25;
-  const HEIGHT = 1000;
+  const HEIGHT = 10;
 
   class TerrainChunk {
     constructor(params) {

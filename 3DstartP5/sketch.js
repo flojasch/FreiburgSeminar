@@ -1,18 +1,10 @@
-//und noch ein test
 let planets = [];
-let r;
-let spaceship;
-let playerpos = 500;
-let aX;
-let aY;
-let aZ;
 
-function preload() {
-  img = loadImage('earth.jpg');
-  spaceship = loadModel('teapot.obj', true);
-}
 
 function setup() {
+  img = loadImage('earth.jpg');
+  xwing = loadModel('xwing.obj', true);
+  metall = loadImage('metall.jpg');
   createCanvas(windowWidth - 30, windowHeight - 30, WEBGL);
   aX = new Vec(1, 0, 0);
   aY = new Vec(0, 1, 0);
@@ -32,52 +24,61 @@ function setup() {
 }
 
 function steering() {
-  let da = 0.01;
-  if (keyCode == UP_ARROW) {
-    aZ.rot(aX, -da);
-    aY.rot(aX, -da);
+  if (keyIsPressed) {
+    let da = 0.01;
+    if (keyCode == UP_ARROW) {
+      aZ.rot(aX, -da);
+      aY.rot(aX, -da);
+    }
+    if (keyCode == DOWN_ARROW) {
+      aZ.rot(aX, da);
+      aY.rot(aX, da);
+    }
+    if (keyCode == RIGHT_ARROW) {
+      aZ.rot(aY, -da);
+      aX.rot(aY, -da);
+    }
+    if (keyCode == LEFT_ARROW) {
+      aZ.rot(aY, da);
+      aX.rot(aY, da);
+    }
+    if (key == 'a') {
+      aY.rot(aZ, da);
+      aX.rot(aZ, da);
+    }
+    if (key == 'd') {
+      aY.rot(aZ, -da);
+      aX.rot(aZ, -da);
+    }
+    if (key == 'w') {
+      r.add(Vec.mult(2, aZ));
+    }
+    if (key == 's') {
+      r.add(Vec.mult(-2, aZ));
+    }
   }
-  if (keyCode == DOWN_ARROW) {
-    aZ.rot(aX, da);
-    aY.rot(aX, da);
-  }
-  if (keyCode == RIGHT_ARROW) {
-    aZ.rot(aY, -da);
-    aX.rot(aY, -da);
-  }
-  if (keyCode == LEFT_ARROW) {
-    aZ.rot(aY, da);
-    aX.rot(aY, da);
-  }
-  if (key == 'e') {
-    r.add(Vec.mult(2, aZ));
-  }
-  if (key == 'd') {
-    r.add(Vec.mult(-2, aZ));
-  }
-  console.log(aY);
 }
 
-setInterval(function () {
+function draw() {
   background(0);
+  showPlayer();
   camera(aZ.x, aZ.y, aZ.z, 0, 0, 0, aY.x, aY.y, aY.z);
   translate(r.x, r.y, r.z);
-  if (keyIsPressed) {
-    steering();
-  }
+  steering();
   noStroke();
   for (let planet of planets) {
     planet.show();
   }
-}, 1000 / 40);
+}
 
 function showPlayer() {
+  camera(0, 0, 1, 0, 0, 0, 0, 1, 0);
   push();
-  rotateX(PI);
-  rotateY(-PI / 2);
-  scale(0.2);
-  normalMaterial();
-  model(spaceship);
+  translate(0, height / 20, -width / 10);
+  scale(0.3);
+  texture(metall);
+  rotateX(PI / 2);
+  model(xwing);
   pop();
 }
 
