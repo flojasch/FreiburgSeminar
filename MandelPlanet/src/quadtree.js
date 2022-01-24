@@ -1,8 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
 
-export const quadtree = (function () {
+export const cubequadtree = (function () {
 
-  const TERRAIN_SIZE = 500;
+  
   const MIN_SIZE = 25;
   const HEIGHT = 10;
 
@@ -14,6 +14,7 @@ export const quadtree = (function () {
       this._power = 0.5;
       this._res = 50;
       this._size = params.size;
+      this._terrainSize=params.terrainSize;
       this._Init();
     }
     Destroy() {
@@ -79,8 +80,8 @@ export const quadtree = (function () {
         n;
       let dx = 0,
         dy = 0;
-      cx = i * 3. / TERRAIN_SIZE - 0.7;
-      cy = j * 3. / TERRAIN_SIZE;
+      cx = i * 3. / this._terrainSize - 0.7;
+      cy = j * 3. / this._terrainSize;
       let c2 = cx * cx + cy * cy;
       if (256.0 * c2 * c2 - 96.0 * c2 + 32.0 * cx - 3.0 < 0.0) return 0.0;
       if (16.0 * (c2 + 2.0 * cx + 1.0) - 1.0 < 0.0) return 0.0;
@@ -114,7 +115,7 @@ export const quadtree = (function () {
         children: [],
         x: 0.0,
         y: 0.0,
-        size: TERRAIN_SIZE,
+        size: this._terrain._terrainSize,
       };
       this.Grow(this._root);
     }
@@ -146,6 +147,7 @@ export const quadtree = (function () {
           group: this._terrain._group,
           offset: new THREE.Vector3(node.x, node.y, 0),
           size: 2 * node.size,
+          terrainSize: this._terrain._terrainSize,
         });
       }
     }
@@ -194,7 +196,62 @@ export const quadtree = (function () {
     }
   }
 
+  class CubeQuadTree {
+    constructor(terrain) {
+      this._terrain = terrain;
+      this._sides = [];
+
+      const r = terrain._terrainSize;
+      let m;
+
+      const transforms = [];
+
+      // +Y
+      m = new THREE.Matrix4();
+      m.makeRotationX(-Math.PI / 2);
+      m.premultiply(new THREE.Matrix4().makeTranslation(0, r, 0));
+      transforms.push(m);
+
+      // -Y
+      m = new THREE.Matrix4();
+      m.makeRotationX(Math.PI / 2);
+      m.premultiply(new THREE.Matrix4().makeTranslation(0, -r, 0));
+      transforms.push(m);
+
+      // +X
+      m = new THREE.Matrix4();
+      m.makeRotationY(Math.PI / 2);
+      m.premultiply(new THREE.Matrix4().makeTranslation(r, 0, 0));
+      transforms.push(m);
+
+      // -X
+      m = new THREE.Matrix4();
+      m.makeRotationY(-Math.PI / 2);
+      m.premultiply(new THREE.Matrix4().makeTranslation(-r, 0, 0));
+      transforms.push(m);
+
+      // +Z
+      m = new THREE.Matrix4();
+      m.premultiply(new THREE.Matrix4().makeTranslation(0, 0, r));
+      transforms.push(m);
+      
+      // -Z
+      m = new THREE.Matrix4();
+      m.makeRotationY(Math.PI);
+      m.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -r));
+      transforms.push(m);
+
+      for (let t of transforms) {
+        this._sides.push({
+          transform: t.clone(),
+          worldToLocal: t.clone().getInverse(t),
+          quadtree: new QuadTree(this._terrain),
+        });
+      }
+   }
+  }
+
   return {
-    QuadTree: QuadTree
+    CubeQuadTree: CubeQuadTree
   }
 })();

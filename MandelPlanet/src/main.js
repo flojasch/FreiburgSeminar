@@ -6,11 +6,10 @@ import {
   controls
 } from './controls.js';
 import {
-  quadtree
+  cubequadtree
 } from './quadtree.js';
 
 let _APP = null;
-const HEIGHT = 100;
 const TERRAIN_SIZE = 500;
 
 class Terrain {
@@ -31,12 +30,12 @@ class Terrain {
     this._group.rotation.x = -Math.PI / 2;
     params.scene.add(this._group);
 
-    this.quadTree = new quadtree.QuadTree(this);
+    this.CubeQuadTree = new cubequadtree.CubeQuadTree(this);
   }
 
   Update(timeInSeconds) {
-    this.quadTree.Rebuild(this.quadTree._root);
-    this.quadTree.Update(this.quadTree._root);
+    this.CubeQuadTree.Rebuild(this.CubeQuadTree._root);
+    this.CubeQuadTree.Update(this.CubeQuadTree._root);
   }
 
 }
@@ -54,7 +53,6 @@ class ProceduralTerrain_Demo extends game.Game {
       gui: this._gui,
       guiParams: this._guiParams,
     });
-
 
     this._entities['control'] = new controls.Controls({
       _camera: this._graphics._camera
