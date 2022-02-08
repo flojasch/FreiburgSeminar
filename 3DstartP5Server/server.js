@@ -25,9 +25,8 @@ io.on('connection', (socket)=> {
     console.log('user '+  socket.id+' connected');
   });
   
-  socket.on('update_player', (playercoords)=> {
-    players[socket.id]=playercoords;
-    
+  socket.on('update_player', (coords)=> {
+    players[socket.id]=coords;
   });
  
   socket.on('disconnect', () => {

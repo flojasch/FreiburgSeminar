@@ -1,5 +1,7 @@
 const socket = io();
 let planets = [];
+let aX, aY, aZ, r, coords;
+let img, xwing, metall;
 
 
 function setup() {
@@ -11,20 +13,13 @@ function setup() {
   aY = new Vec(0, 1, 0);
   aZ = new Vec(0, 0, 1);
   r = new Vec(0, 0, 0);
-  socket.emit('new_player', {
-    Xx: aX.x,
-    Xy: aY.y,
-    Xz: aY.z,
-    Yx: aY.x,
-    Yy: aY.y,
-    Yz: aY.z,
-    Zx: aZ.x,
-    Zy: aZ.y,
-    Zz: aZ.z,
-    x: r.x,
-    y: r.y,
-    z: r.z
-  });
+  coords = {
+    X: aX,
+    Y: aY,
+    Z: aZ,
+    r: r,
+  };
+  socket.emit('new_player', coords);
   for (let i = 0; i < 6; i++) {
     for (let j = 0; j < 6; j++) {
       for (let k = 0; k < 6; k++) {
@@ -71,21 +66,8 @@ function steering() {
     if (key == 's') {
       r.add(Vec.mult(-2, aZ));
     }
+    socket.emit('update_player', coords);
   }
-  socket.emit('player_update', {
-    Xx: aX.x,
-    Xy: aX.y,
-    Xz: aX.z,
-    Yx: aY.x,
-    Yy: aY.y,
-    Yz: aY.z,
-    Zx: aZ.x,
-    Zy: aZ.y,
-    Zz: aZ.z,
-    x: r.x,
-    y: r.y,
-    z: r.z
-  });
 }
 
 socket.on('state', function (players) {
@@ -94,25 +76,26 @@ socket.on('state', function (players) {
   camera(aZ.x, aZ.y, aZ.z, 0, 0, 0, aY.x, aY.y, aY.z);
   translate(r.x, r.y, r.z);
   steering();
-  noStroke();
-    for (let planet of planets) {
+  for (let planet of planets) {
     planet.show();
   }
-  for(let id in players){
-    showOther(players[id]);
+  for (let id in players) {
+    if (id != socket.id) {
+      showOther(players[id]);
+    }
   }
- //console.log(players)
 });
 
-function showOther(cord){
+function showOther(coord) {
   push();
-  translate(cord.x,cord.y,cord.z);
+  translate(coord.r.x, coord.r.y, coord.r.z);
   scale(0.3);
   texture(metall);
-  rotateX(PI/2);
+  rotateX(PI / 2);
   model(xwing);
   pop();
 }
+
 function showPlayer() {
   camera(0, 0, 1, 0, 0, 0, 0, 1, 0);
   push();
