@@ -1,7 +1,10 @@
 const socket = io();
 let planets = [];
-let aX, aY, aZ, r, coords;
+let X, Y, Z, pos, coords;
 let img, xwing, metall;
+let alphax = 0,
+  alphay = 0,
+  speed = 0;
 
 
 function setup() {
@@ -9,15 +12,15 @@ function setup() {
   xwing = loadModel('static/models/xwing.obj', true);
   metall = loadImage('static/images/metall.jpg');
   createCanvas(windowWidth - 30, windowHeight - 30, WEBGL);
-  aX = new Vec(1, 0, 0);
-  aY = new Vec(0, 1, 0);
-  aZ = new Vec(0, 0, 1);
-  r = new Vec(0, 0, 0);
+  X = new Vec(1, 0, 0);
+  Y = new Vec(0, 1, 0);
+  Z = new Vec(0, 0, 1);
+  pos = new Vec(0, 0, 0);
   coords = {
-    X: aX,
-    Y: aY,
-    Z: aZ,
-    r: r,
+    X: X,
+    Y: Y,
+    Z: Z,
+    pos: pos,
   };
   socket.emit('new_player', coords);
   for (let i = 0; i < 6; i++) {
@@ -35,46 +38,57 @@ function setup() {
 
 function steering() {
   if (keyIsPressed) {
-    let da = 0.01;
+    let da = 0.02;
+    let amax = PI / 4;
     if (keyCode == UP_ARROW) {
-      aZ.rot(aX, -da);
-      aY.rot(aX, -da);
+      if (alphax > -amax) alphax -= 3 * da;
+      Z.rot(X, -da);
+      Y.rot(X, -da);
     }
     if (keyCode == DOWN_ARROW) {
-      aZ.rot(aX, da);
-      aY.rot(aX, da);
+      if (alphax < amax) alphax += 3 * da;
+      Z.rot(X, da);
+      Y.rot(X, da);
     }
     if (keyCode == RIGHT_ARROW) {
-      aZ.rot(aY, -da);
-      aX.rot(aY, -da);
+      if (alphay < amax) alphay += 3 * da;
+      Z.rot(Y, -da);
+      X.rot(Y, -da);
     }
     if (keyCode == LEFT_ARROW) {
-      aZ.rot(aY, da);
-      aX.rot(aY, da);
+      if (alphay > -amax) alphay -= 3 * da; 
+      Z.rot(Y, da);
+      X.rot(Y, da);
     }
     if (key == 'a') {
-      aY.rot(aZ, da);
-      aX.rot(aZ, da);
+      Y.rot(Z, da);
+      X.rot(Z, da);
     }
     if (key == 'd') {
-      aY.rot(aZ, -da);
-      aX.rot(aZ, -da);
+      Y.rot(Z, -da);
+      X.rot(Z, -da);
     }
     if (key == 'w') {
-      r.add(Vec.mult(2, aZ));
+      if (speed < 8) speed += 0.1;
     }
     if (key == 's') {
-      r.add(Vec.mult(-2, aZ));
+      if (speed > -1) speed -= 0.1;
     }
-    socket.emit('update_player', coords);
+
+  } else {
+    alphax *= 0.85;
+    alphay *= 0.85;
+    speed *= 0.98;
   }
+  pos.update(Z, speed);
+  socket.emit('update_player', coords);
 }
 
 socket.on('state', function (players) {
   background(0);
   showPlayer();
-  camera(aZ.x, aZ.y, aZ.z, 0, 0, 0, aY.x, aY.y, aY.z);
-  translate(r.x, r.y, r.z);
+  camera(Z.x, Z.y, Z.z, 0, 0, 0, Y.x, Y.y, Y.z);
+  translate(pos.x, pos.y, pos.z);
   steering();
   for (let planet of planets) {
     planet.show();
@@ -88,7 +102,7 @@ socket.on('state', function (players) {
 
 function showOther(coord) {
   push();
-  translate(coord.r.x, coord.r.y, coord.r.z);
+  translate(coord.pos.x, coord.pos.y, coord.pos.z);
   scale(0.3);
   texture(metall);
   rotateX(PI / 2);
@@ -103,6 +117,8 @@ function showPlayer() {
   scale(0.3);
   texture(metall);
   rotateX(PI / 2);
+  rotateX(alphax);
+  rotateY(alphay);
   model(xwing);
   pop();
 }
@@ -140,16 +156,9 @@ class Vec {
     this.y += dy;
     this.z += dz;
   }
-  static mult(t, v) {
-    let res = {};
-    res.x = v.x * t;
-    res.y = v.y * t;
-    res.z = v.z * t;
-    return res;
-  }
-  add(v) {
-    this.x += v.x;
-    this.y += v.y;
-    this.z += v.z;
+  update(dir, speed) {
+    this.x += dir.x * speed;
+    this.y += dir.y * speed;
+    this.z += dir.z * speed;
   }
 }
