@@ -15,8 +15,7 @@ const TERRAIN_SIZE = 500;
 class Terrain {
   constructor(params) {
     this._terrainSize = TERRAIN_SIZE;
-    this._camera = params.camera;
-    this._camSec = new THREE.Vector3();
+    this._camPos = params.camPos;
     this._Init(params);
   }
 
@@ -30,12 +29,15 @@ class Terrain {
     this._group.rotation.x = -Math.PI / 2;
     params.scene.add(this._group);
 
-    this.CubeQuadTree = new cubequadtree.CubeQuadTree(this);
+    this.CubeQuadTree = new cubequadtree.CubeQuadTree({
+      terrainSize: this._terrainSize,
+      camPos: this._camPos,
+      group: this._group,
+    });
   }
 
   Update(timeInSeconds) {
-    this.CubeQuadTree.Rebuild(this.CubeQuadTree._root);
-    this.CubeQuadTree.Update(this.CubeQuadTree._root);
+    this.CubeQuadTree.Update();
   }
 
 }
@@ -49,9 +51,7 @@ class ProceduralTerrain_Demo extends game.Game {
 
     this._entities['_terrain'] = new Terrain({
       scene: this._graphics.Scene,
-      camera: this._graphics._camera,
-      gui: this._gui,
-      guiParams: this._guiParams,
+      camPos: this._graphics._camera.position,
     });
 
     this._entities['control'] = new controls.Controls({

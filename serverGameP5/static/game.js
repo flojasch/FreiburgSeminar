@@ -3,7 +3,6 @@ let gameStarted = false;
 let planets = [];
 let projectiles = [];
 let explosions = [];
-let myId = 0;
 let score = 0;
 let lives = 4;
 let fireBreak = 0;
@@ -113,6 +112,7 @@ document.addEventListener('keydown', function (event) {
       if (fireBreak == 0) {
         movement.projectile = true;
         lasersound.play();
+        fireBreak=30;
       } else {
         movement.projectile = false;
       }
@@ -150,24 +150,18 @@ document.addEventListener('keyup', function (event) {
   }
 });
 
-socket.on('id', function (id) {
-  if (myId === 0) {
-    myId = id;
-  }
-});
-socket.on('projectile', function (p) {
+socket.on('projectile', (p)=> {
   let projectile = new Projectile(p.x, p.y, p.z, p.vx, p.vy, p.vz, p.id);
   projectiles.push(projectile);
-  if (p.id == myId) {
+  if (p.id == socked.id) {
     movement.projectile = false;
-    fireBreak = 30;
   }
 });
 
-socket.on('state', function (players) {
+socket.on('state', (players)=> {
   if (gameStarted) {
     background(0);
-    me = players[myId] || {};
+    me = players[socket.id] || {};
     socket.emit('movement', movement);
     showMe();
     camera(me.Z.x, me.Z.y, me.Z.z, 0, 0, 0, me.Y.x, me.Y.y, me.Y.z);
@@ -175,7 +169,7 @@ socket.on('state', function (players) {
     if (fireBreak != 0) fireBreak--;
     text.html('Score: ' + score + '   Lives: ' + lives);
     for (var id in players) {
-      if (id != myId) {
+      if (id != socket.id) {
         var player = players[id];
         showPlayers(player);
       }
@@ -209,11 +203,11 @@ function updateProjectiles(players) {
     for (let playerid in players) {
       let player = players[playerid];
       if (p.hit(player)) {
-        if (playerid == myId && p.id != myId) {
+        if (playerid == socket.id && p.id != socket.id) {
           IamHit();
           deleteP(i, p);
         }
-        if (p.id == myId && playerid != myId) {
+        if (p.id == socket.id && playerid != socket.id) {
           score += 100;
           deleteP(i, p);
         }
@@ -244,7 +238,7 @@ function IamHit() {
     t.style('font-size', '800%');
     t.style('color', 'ff0000');
     t.html('Game Over');
-    socket.emit('deleteplayer', myId);
+    socket.emit('deleteplayer', socket.id);
     gameStartet = false;
   }
 }

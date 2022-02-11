@@ -52,10 +52,10 @@ io.on('connection', function (socket) {
     console.log('user ' + socket.id + ' connected');
     //console.log(players);
   });
-  socket.on('deleteplayer', function (id) {
+  socket.on('deleteplayer', (id)=> {
     delete players[id];
   });
-  socket.on('movement', function (data) {
+  socket.on('movement', (data)=> {
     let player = players[socket.id] || {};
     let pZ=player.Z||{};
     let ang = 0.01;
