@@ -18,27 +18,32 @@ let alphax = 0,
 let start = false;
 const amax = Math.PI / 4;
 const da = 0.1;
+const yoffset=40,zoffset=-140;
 
 
 function setup() {
   img = loadImage('static/images/earth.jpg');
   xwing = loadModel('static/models/xwing.obj', true);
   metall = loadImage('static/images/metall.jpg');
-  createCanvas(windowWidth - 30, windowHeight - 30, WEBGL);
+  createCanvas(windowWidth-20, windowHeight-20, WEBGL);
   socket.emit('new_player');
   
-  for (let i = 0; i < 6; i++) {
-    for (let j = 0; j < 6; j++) {
-      for (let k = 0; k < 6; k++) {
-        let shift = 250;
-        let earth = new Planet(100 * i - shift, 100 * j - shift, 100 * k - shift, 30);
-        planets.push(earth);
-      }
-    }
-  }
+  // for (let i = 0; i < 6; i++) {
+  //   for (let j = 0; j < 6; j++) {
+  //     for (let k = 0; k < 6; k++) {
+  //       let shift = 250;
+  //       let earth = new Planet(100 * i - shift, 100 * j - shift, 100 * k - shift, 30);
+  //       planets.push(earth);
+  //     }
+  //   }
+  // }
   ambientLight(100);
   directionalLight(200, 200, 200, 1, -1, -1);
   start = true;
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth-20, windowHeight-20);
 }
 
 document.addEventListener('keydown', (event) => {
@@ -115,6 +120,7 @@ socket.on('state', (players) => {
     const Y = player.Y || {};
     camera(Z.x, Z.y, Z.z, 0, 0, 0, Y.x, Y.y, Y.z);
     translate(pos.x, pos.y, pos.z);
+    translate(0,yoffset,zoffset);
     for (let planet of planets) {
       planet.show();
     }
@@ -134,7 +140,7 @@ function showOthers(players) {
       if (c.Z.x < 0) yAngle *= -1;
       rotateY(yAngle);
       rotateX(-xAngle);
-      scale(0.3);
+      scale(0.5);
       texture(metall);
       rotateX(PI / 2);
       model(xwing);
@@ -159,8 +165,8 @@ function rotateModel() {
 function showPlayer() {
   camera(0, 0, 1, 0, 0, 0, 0, 1, 0);
   push();
-  translate(0, height / 20, -width / 10);
-  scale(0.6);
+  translate(0,yoffset,zoffset);
+  scale(0.5);
   texture(metall);
   rotateX(PI / 2);
   rotateX(alphax);
