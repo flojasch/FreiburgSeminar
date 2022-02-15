@@ -30,7 +30,7 @@ export const graphics = (function() {
       const near = 0.1;
       const far = 50000.0;
       this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-      this._camera.position.set(0.1, 100, 50.1);
+      this._camera.position.set(0.1, 50, 200.1);
 
       this._scene = new THREE.Scene();
       this._scene.background = new THREE.Color(0xaaaaaa);
@@ -49,6 +49,12 @@ export const graphics = (function() {
 
       light = new THREE.DirectionalLight(0x404040, 1, 100);
       light.position.set(100, 100, -100);
+      light.target.position.set(0, 0, 0);
+      light.castShadow = false;
+      this._scene.add(light);
+
+      light = new THREE.DirectionalLight(0x404040, 1, 100);
+      light.position.set(100, -100, 100);
       light.target.position.set(0, 0, 0);
       light.castShadow = false;
       this._scene.add(light);

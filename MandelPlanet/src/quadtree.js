@@ -1,43 +1,40 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
 
-export const cubequadtree = (function () {
-
+export const quadtree = (function () {
 
   const MIN_SIZE = 25;
-  const HEIGHT = 10;
+  const HEIGHT = 5;
 
   class TerrainChunk {
     constructor(params) {
-      this.group = params.group;
-      this.transform = params.transform;
-      this.offset = params.offset;
-      this.height = HEIGHT;
-      this.power = 0.5;
-      this.res = 50;
-      this.size = params.size;
-      this.terrainSize = params.terrainSize;
-      this.Init();
+      this._params = params;
+      this._matrix=params.matrix;
+      this._offset = params.offset;
+      this._height = HEIGHT;
+      this._power = 0.5;
+      this._res = 50;
+      this._size = params.size;
+      this._terrainSize = params.terrainSize;
+      this._Init();
     }
     Destroy() {
-      this.group.remove(this.plane);
+      this._params.group.remove(this._plane);
     }
 
-    Init() {
-      const geometry=new THREE.PlaneGeometry(this.size, this.size, this.res, this.res);
-      geometry.applyMatrix4(this.transform);  
-      this.plane = new THREE.Mesh(
-        geometry,
+    _Init() {
+      const geometry = new THREE.PlaneGeometry(this._size, this._size, this._res, this._res);
+      
+      this._plane = new THREE.Mesh(geometry,
         new THREE.MeshStandardMaterial({
           wireframe: false,
           color: 0xFFFFFF,
           side: THREE.FrontSide,
           vertexColors: THREE.VertexColors,
         }));
-      this.plane.position.add(this.offset);
-      this.plane.castShadow = false;
-      this.plane.receiveShadow = true;
-      
-      this.group.add(this.plane);
+      this._plane.position.add(this._offset);
+      this._plane.castShadow = false;
+      this._plane.receiveShadow = true;
+      this._params.group.add(this._plane);
       this.Rebuild();
     }
 
@@ -54,13 +51,19 @@ export const cubequadtree = (function () {
 
     Rebuild() {
       const heights = [];
-      for (let k in this.plane.geometry.vertices) {
-        const v = this.plane.geometry.vertices[k];
-        v.z = this.setHeight(v.x + this.offset.x, v.y + this.offset.y);
-        heights.push(v.z);
+      for (let k in this._plane.geometry.vertices) {
+        const v = this._plane.geometry.vertices[k];
+        v.z +=this._terrainSize;
+        let height=this.setHeight(v.x + this._offset.x, v.y + this._offset.y);
+        const factor = (Math.sqrt(3)*this._terrainSize+height)/Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z);
+        v.x *=factor;
+        v.y *=factor;
+        v.z *=factor;
+        v.applyMatrix4(this._matrix);
+        heights.push(height);
       }
 
-      for (let f of this.plane.geometry.faces) {
+      for (let f of this._plane.geometry.faces) {
         const vertexColours = [];
 
         this.setColor(heights[f.a], vertexColours);
@@ -69,10 +72,10 @@ export const cubequadtree = (function () {
 
         f.vertexColors = vertexColours;
       }
-      this.plane.geometry.elementsNeedUpdate = true;
+      this._plane.geometry.elementsNeedUpdate = true;
 
-      this.plane.geometry.verticesNeedUpdate = true;
-      this.plane.geometry.computeVertexNormals();
+      this._plane.geometry.verticesNeedUpdate = true;
+      this._plane.geometry.computeVertexNormals();
     }
 
     setHeight(j, i) {
@@ -84,8 +87,8 @@ export const cubequadtree = (function () {
         n;
       let dx = 0,
         dy = 0;
-      cx = i * 3. / this.terrainSize - 0.7;
-      cy = j * 3. / this.terrainSize;
+      cx = i * 3. / this._terrainSize - 0.7;
+      cy = j * 3. / this._terrainSize;
       let c2 = cx * cx + cy * cy;
       if (256.0 * c2 * c2 - 96.0 * c2 + 32.0 * cx - 3.0 < 0.0) return 0.0;
       if (16.0 * (c2 + 2.0 * cx + 1.0) - 1.0 < 0.0) return 0.0;
@@ -105,24 +108,25 @@ export const cubequadtree = (function () {
 
       let d = Math.sqrt(r / (dx * dx + dy * dy)) * Math.log(r);
       if (n == maxiter) d = 0;
-      const pow = Math.pow(d, this.power);
-      return this.height * pow;
+      const pow = Math.pow(d, this._power);
+      return this._height * pow;
     }
 
   }
 
   class QuadTree {
     constructor(params) {
-      this.group = params.group;
-      this.camPos = params.camPos;
-      this.transform = params.transform;
-      this.root = {
+      this._terrainSize = params.terrainSize;
+      this._group = params.group;
+      this._cam = params.camPos;
+      this._matrix=params.matrix;
+      this._root = {
         children: [],
         x: 0.0,
         y: 0.0,
-        size: params.terrainSize,
+        size: this._terrainSize,
       };
-      this.Grow(this.root);
+      this.Grow(this._root);
     }
 
     Split(node) {
@@ -149,18 +153,18 @@ export const cubequadtree = (function () {
         }
       } else {
         node.chunk = new TerrainChunk({
-          group: this.group,
+          group: this._group,
           offset: new THREE.Vector3(node.x, node.y, 0),
           size: 2 * node.size,
-          terrainSize: this.terrainSize,
-          transform: this.transform,
+          terrainSize: this._terrainSize,
+          matrix: this._matrix,
         });
       }
     }
 
     isClose(node) {
-      let x = this.camPos.x - node.x;
-      let y = this.camPos.z + node.y;
+      let x = this._cam.x - node.x;
+      let y = this._cam.z + node.y;
       return x * x + y * y < node.size * node.size * 4;
     }
 
@@ -202,71 +206,7 @@ export const cubequadtree = (function () {
     }
   }
 
-  class CubeQuadTree {
-    constructor(params) {
-      this.group = params.group;
-      this.camPos = params.camPos;
-      this.terrainSize = params.terrainSize;
-      this.sides = [];
-
-      const r = this.terrainSize;
-      let m;
-
-      const transforms = [];
-
-      // +Y
-      m = new THREE.Matrix4();
-      m.makeRotationX(-Math.PI / 2);
-      m.premultiply(new THREE.Matrix4().makeTranslation(0, r, 0));
-      transforms.push(m);
-
-      // -Y
-      m = new THREE.Matrix4();
-      m.makeRotationX(Math.PI / 2);
-      m.premultiply(new THREE.Matrix4().makeTranslation(0, -r, 0));
-      transforms.push(m);
-
-      // +X
-      m = new THREE.Matrix4();
-      m.makeRotationY(Math.PI / 2);
-      m.premultiply(new THREE.Matrix4().makeTranslation(r, 0, 0));
-      transforms.push(m);
-
-      // -X
-      m = new THREE.Matrix4();
-      m.makeRotationY(-Math.PI / 2);
-      m.premultiply(new THREE.Matrix4().makeTranslation(-r, 0, 0));
-      transforms.push(m);
-
-      // +Z
-      m = new THREE.Matrix4();
-      m.premultiply(new THREE.Matrix4().makeTranslation(0, 0, r));
-      transforms.push(m);
-
-      // -Z
-      m = new THREE.Matrix4();
-      m.makeRotationY(Math.PI);
-      m.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -r));
-      transforms.push(m);
-
-      for (let t of transforms) {
-        this.sides.push(new QuadTree({
-          group: this.group,
-          camPos: this.camPos,
-          terrainSize: this.terrainSize,
-          transform: t,
-        }));
-      }
-    }
-    Update() {
-      for (let side of this.sides) {
-        side.Rebuild(side.root);
-        side.Update(side.root);
-      }
-    }
-  }
-
   return {
-    CubeQuadTree: CubeQuadTree
+    QuadTree: QuadTree
   }
 })();

@@ -1,43 +1,77 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
 import {
+  GUI
+} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/libs/dat.gui.module.js';
+import {
+  OrbitControls
+} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/controls/OrbitControls.js';
+import {
+  sky
+} from './sky.js';
+import {
   game
 } from './game.js';
+
 import {
   controls
 } from './controls.js';
+
 import {
-  cubequadtree
+  quadtree
 } from './quadtree.js';
 
+
 let _APP = null;
-const TERRAIN_SIZE = 500;
+const TERRAIN_SIZE = 100;
 
 class Terrain {
   constructor(params) {
     this._terrainSize = TERRAIN_SIZE;
-    this._camPos = params.camPos;
-    this._Init(params);
+    this.sides = [];
+    this.MakeSides(params);
   }
 
-  _Init(params) {
-    this._InitTerrain(params);
-  }
+  MakeSides(params) {
+    const group = new THREE.Group();
+    params.scene.add(group);
+    
+    let m;
+    const rotations = [];
+    m = new THREE.Matrix4();
+    m.makeRotationX(-Math.PI / 2);
+    rotations.push(m);
 
-  _InitTerrain(params) {
+    m = new THREE.Matrix4();
+    m.makeRotationX(Math.PI / 2);
+    rotations.push(m);
 
-    this._group = new THREE.Group()
-    this._group.rotation.x = -Math.PI / 2;
-    params.scene.add(this._group);
+    m = new THREE.Matrix4();
+    rotations.push(m);
 
-    this.CubeQuadTree = new cubequadtree.CubeQuadTree({
-      terrainSize: this._terrainSize,
-      camPos: this._camPos,
-      group: this._group,
-    });
+    m = new THREE.Matrix4();
+    m.makeRotationX(Math.PI);
+    rotations.push(m);
+
+    m = new THREE.Matrix4();
+    m.makeRotationY(Math.PI/2);
+    rotations.push(m);
+
+    m = new THREE.Matrix4();
+    m.makeRotationY(-Math.PI/2);
+    rotations.push(m);
+    
+    for (let rot of rotations)
+      this.sides.push(new quadtree.QuadTree({
+        terrainSize: this._terrainSize,
+        group: group,
+        camPos: params.camPos,
+        matrix: rot,
+      }));
   }
 
   Update(timeInSeconds) {
-    this.CubeQuadTree.Update();
+    for (let side of this.sides)
+      side.Rebuild(side._root);
   }
 
 }
@@ -47,17 +81,40 @@ class ProceduralTerrain_Demo extends game.Game {
     super();
   }
 
-  _OnInitialize() {
+  _CreateControls() {
+    const controls = new OrbitControls(
+      this._graphics._camera, this._graphics._threejs.domElement);
+    controls.target.set(0, 50, 0);
+    controls.object.position.set(475, 345, 900);
+    controls.update();
+    return controls;
+  }
 
+  _OnInitialize() {
+    //this._CreateGUI();
+    this._CreateControls();
     this._entities['_terrain'] = new Terrain({
       scene: this._graphics.Scene,
       camPos: this._graphics._camera.position,
     });
 
+    // this._entities['_sky'] = new sky.TerrainSky({
+    //   camera: this._graphics.Camera,
+    //   scene: this._graphics.Scene,
+    //   gui: this._gui,
+    //   guiParams: this._guiParams,
+    // });
+
     this._entities['control'] = new controls.Controls({
       _camera: this._graphics._camera
     });
 
+  }
+
+  _CreateGUI() {
+    this._guiParams = {};
+    this._gui = new GUI();
+    this._gui.close();
   }
 
   _OnStep(timeInSeconds) {}
