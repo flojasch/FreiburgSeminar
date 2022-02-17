@@ -22,7 +22,7 @@ import {
 
 
 let _APP = null;
-const TERRAIN_SIZE = 100;
+const TERRAIN_SIZE = 25000;
 
 class Terrain {
   constructor(params) {
@@ -34,32 +34,57 @@ class Terrain {
   MakeSides(params) {
     const group = new THREE.Group();
     params.scene.add(group);
-    
+
     let m;
     const rotations = [];
+    //top
     m = new THREE.Matrix4();
     m.makeRotationX(-Math.PI / 2);
-    rotations.push(m);
+    rotations.push({
+      m,
+      tx: -1,
+      ty: 0,
+    });
+
+    m = new THREE.Matrix4();
+    rotations.push({
+      m,
+      tx: 0,
+      ty: 0
+    });
 
     m = new THREE.Matrix4();
     m.makeRotationX(Math.PI / 2);
-    rotations.push(m);
+    rotations.push({
+      m,
+      tx: 1,
+      ty: 0
+    });
+   //backside
+    m = new THREE.Matrix4();
+    m.makeRotationY(-Math.PI);
+    rotations.push({
+      m,
+      tx: 0,
+      ty: -2
+    });
 
     m = new THREE.Matrix4();
-    rotations.push(m);
+    m.makeRotationY(Math.PI / 2);
+    rotations.push({
+      m,
+      tx: 0,
+      ty: 1
+    });
 
     m = new THREE.Matrix4();
-    m.makeRotationX(Math.PI);
-    rotations.push(m);
+    m.makeRotationY(-Math.PI / 2);
+    rotations.push({
+      m,
+      tx: 0,
+      ty: -1
+    });
 
-    m = new THREE.Matrix4();
-    m.makeRotationY(Math.PI/2);
-    rotations.push(m);
-
-    m = new THREE.Matrix4();
-    m.makeRotationY(-Math.PI/2);
-    rotations.push(m);
-    
     for (let rot of rotations)
       this.sides.push(new quadtree.QuadTree({
         terrainSize: this._terrainSize,
@@ -70,8 +95,10 @@ class Terrain {
   }
 
   Update(timeInSeconds) {
-    for (let side of this.sides)
+    for (let side of this.sides){
       side.Rebuild(side._root);
+      side.Update(side._root);
+    }
   }
 
 }
@@ -92,7 +119,7 @@ class ProceduralTerrain_Demo extends game.Game {
 
   _OnInitialize() {
     //this._CreateGUI();
-    this._CreateControls();
+    //this._CreateControls();
     this._entities['_terrain'] = new Terrain({
       scene: this._graphics.Scene,
       camPos: this._graphics._camera.position,
