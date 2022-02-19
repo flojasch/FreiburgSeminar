@@ -24,7 +24,7 @@ export const quadtree = (function () {
       this._plane = new THREE.Mesh(
         new THREE.PlaneGeometry(this._size, this._size, this._res, this._res),
         new THREE.MeshStandardMaterial({
-          wireframe: true,
+          wireframe: false,
           color: 0xFFFFFF,
           side: THREE.FrontSide,
           vertexColors: THREE.VertexColors,
