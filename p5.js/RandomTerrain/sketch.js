@@ -1,15 +1,11 @@
-let heightmap;
-let terrain;
 
-function preload() {
-  heightmap = loadImage('/schwarzwald.png');
-}
+let terrain;
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   noStroke();
   camera(0, -150, 300);
-  terrain = meshFromHeightmap(heightmap);
+  terrain = meshFromWeierstrass();
 }
 
 function draw() {
@@ -18,43 +14,32 @@ function draw() {
   orbitControl(2, 1, 0.05);
   
   directionalLight(255, 255, 255, 0.5, 1, -0.5);
-  
-  // meshFromHeightmap assumes 256x256 unit grid with altitudes from 0 to 255.
-  // That results in excessively steap terrain for most use cases.
   rotateX(PI / 2);
   scale(1, 1, 50 / 255);
   model(terrain);
 }
 
-function meshFromHeightmap(image, detailX = 700, detailY = 700) {
+function meshFromWeierstrass(detailX = 512, detailY = 512) {
   return new p5.Geometry(
     detailX,
     detailY,
     function() {
-      // Pixels per sample
-      const xpps = (image.width - 1) / detailX;
-      const ypps = (image.height - 1) / detailY;
       const xoff = -256;
-      const yoff = -256;
-      const unitX = 512 / detailX;
-      const unitY = 512 / detailY;
-      
+      const yoff = -256;   
       let values = [];
       for (let j = 0; j <= detailY; j++) {
         for (let i = 0; i <= detailX; i++) {
-          let v = 0.7*gray(image.get(round(i * xpps), round(j * ypps)));
+          let v = 100*sin(i/20)*sin(j/20);
           this.vertices.push(new p5.Vector(
-            xoff + i * unitX,
-            yoff + j * unitY,
-            v*0.5
+            xoff + i ,
+            yoff + j ,
+            v
           ));
           values.push(v);
         }
       }
-      
       this.computeFaces();
       this.computeNormals();
-      
       this.gid = `terrain|${cyrb53(values)}`;
     }
   )
