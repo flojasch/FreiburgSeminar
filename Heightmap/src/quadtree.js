@@ -29,8 +29,8 @@ export const quadtree = (function () {
 
       const dimensions = new THREE.Vector2(TERRAIN_SIZE, TERRAIN_SIZE);
 
-      const xf = 1.0 - math.sat(x / dimensions.x);
-      const yf = math.sat(y / dimensions.y);
+      const xf = 1-math.sat((x+TERRAIN_SIZE/2) / dimensions.x);
+      const yf = math.sat((y+TERRAIN_SIZE/2) / dimensions.y);
       const w = this._data.width - 1;
       const h = this._data.height - 1;
 
@@ -140,7 +140,7 @@ export const quadtree = (function () {
 
     loadImage() {
       const loader = new THREE.TextureLoader(this._manager);
-      loader.load('./resources/oberland.png', (result) => {
+      loader.load('./resources/seealpen.png', (result) => {
         this.setHeightmap(result.image);
       });
     }
