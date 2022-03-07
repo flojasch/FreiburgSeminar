@@ -1,38 +1,49 @@
-
 let terrain;
+let rand=[];
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   noStroke();
   camera(0, -150, 300);
+  for (let l = 0; l < 20; l++) {
+    rand[l]=[];
+    for (let k = 0; k < 20; k++) {
+      rand[l][k]=Math.random();
+    }
+  }
   terrain = meshFromWeierstrass();
+
 }
 
 function draw() {
   background(0);
-  
+
   orbitControl(2, 1, 0.05);
-  
+
   directionalLight(255, 255, 255, 0.5, 1, -0.5);
   rotateX(PI / 2);
   scale(1, 1, 50 / 255);
   model(terrain);
 }
 
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+
 function meshFromWeierstrass(detailX = 512, detailY = 512) {
   return new p5.Geometry(
     detailX,
     detailY,
-    function() {
+    function () {
       const xoff = -256;
-      const yoff = -256;   
+      const yoff = -256;
       let values = [];
       for (let j = 0; j <= detailY; j++) {
         for (let i = 0; i <= detailX; i++) {
-          let v = 100*sin(i/20)*sin(j/20);
+          let v = hoehe(i, j);
           this.vertices.push(new p5.Vector(
-            xoff + i ,
-            yoff + j ,
+            xoff + i,
+            yoff + j,
             v
           ));
           values.push(v);
@@ -45,6 +56,25 @@ function meshFromWeierstrass(detailX = 512, detailY = 512) {
   )
 }
 
+function hoehe(i, j) {
+  let by = 0.01;
+  let ax= ay=10;
+  let lambda = 1.5;
+  let base = 0.7;
+  let ret = 0;
+  for (let l = 0; l < 20; l++) {
+    by*=lambda;
+    ay*=base;
+    let bx=0.01;
+    ax=20;
+    for (let k = 0; k < 20; k++) {
+      ax*=base;
+      bx*=lambda;
+      ret += rand[l][k]*ax *ay* sin(bx * i+by * j);
+    }
+  }
+  return ret;
+}
 
 // The built in p5.js RGB -> lightness function leaves something to be desired.
 // Credit: https://stackoverflow.com/a/13558570/229247
@@ -56,31 +86,31 @@ const bY = 0.072187;
 
 // Inverse of sRGB "gamma" function. (approx 2.2)
 function inv_gam_sRGB(ic) {
-    const c = ic/255.0;
-    if ( c <= 0.04045 ) {
-        return c/12.92;
-    } else { 
-        return pow(((c+0.055)/(1.055)),2.4);
-    }
+  const c = ic / 255.0;
+  if (c <= 0.04045) {
+    return c / 12.92;
+  } else {
+    return pow(((c + 0.055) / (1.055)), 2.4);
+  }
 }
 
 // sRGB "gamma" function (approx 2.2)
 function gam_sRGB(v) {
-    if(v<=0.0031308) {
-      v *= 12.92;
-    } else {
-      v = 1.055*pow(v,1.0/2.4)-0.055;
-    }
-    return int(v*255+0.5);
+  if (v <= 0.0031308) {
+    v *= 12.92;
+  } else {
+    v = 1.055 * pow(v, 1.0 / 2.4) - 0.055;
+  }
+  return int(v * 255 + 0.5);
 }
 
 // GRAY VALUE ("brightness")
 function gray(c) {
-    return gam_sRGB(
-            rY*inv_gam_sRGB(red(c)) +
-            gY*inv_gam_sRGB(green(c)) +
-            bY*inv_gam_sRGB(blue(c))
-    );
+  return gam_sRGB(
+    rY * inv_gam_sRGB(red(c)) +
+    gY * inv_gam_sRGB(green(c)) +
+    bY * inv_gam_sRGB(blue(c))
+  );
 }
 
 // Generate a hash code from an array of integers
