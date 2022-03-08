@@ -1,18 +1,21 @@
 let terrain;
-let rand=[];
+let maxfreq = 10;
+let a = [];
+let phi = [];
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   noStroke();
   camera(0, -150, 300);
-  for (let l = 0; l < 20; l++) {
-    rand[l]=[];
-    for (let k = 0; k < 20; k++) {
-      rand[l][k]=Math.random();
+  for (let l = 0; l < maxfreq; l++) {
+    a[l] = [];
+    phi[l] = [];
+    for (let k = 0; k < maxfreq; k++) {
+      a[l][k] = Math.random();
+      phi[l][k] = Math.random() * Math.PI * 2;
     }
   }
-  terrain = meshFromWeierstrass();
-
+  terrain = meshFromNoise();
 }
 
 function draw() {
@@ -21,57 +24,70 @@ function draw() {
   orbitControl(2, 1, 0.05);
 
   directionalLight(255, 255, 255, 0.5, 1, -0.5);
+
+  // meshFromHeightmap assumes 256x256 unit grid with altitudes from 0 to 255.
+  // That results in excessively steap terrain for most use cases.
   rotateX(PI / 2);
   scale(1, 1, 50 / 255);
   model(terrain);
 }
 
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+function onWindowsResize() {
+  resizeCanvas(WindowWidth, WindowHeight);
 }
 
-function meshFromWeierstrass(detailX = 512, detailY = 512) {
+function meshFromNoise(detailX = 700, detailY = 700) {
   return new p5.Geometry(
     detailX,
     detailY,
     function () {
+      // Pixels per sample
       const xoff = -256;
       const yoff = -256;
+      const unitX = 512 / detailX;
+      const unitY = 512 / detailY;
+
       let values = [];
       for (let j = 0; j <= detailY; j++) {
         for (let i = 0; i <= detailX; i++) {
-          let v = hoehe(i, j);
+          let v = weierstrass(i, j);
           this.vertices.push(new p5.Vector(
-            xoff + i,
-            yoff + j,
+            xoff + i * unitX,
+            yoff + j * unitY,
             v
           ));
           values.push(v);
         }
       }
+
       this.computeFaces();
       this.computeNormals();
+
       this.gid = `terrain|${cyrb53(values)}`;
     }
   )
 }
 
-function hoehe(i, j) {
-  let by = 0.01;
-  let ax= ay=10;
-  let lambda = 1.5;
-  let base = 0.7;
+function noise2d(x, y) {
+  let k = 2 * PI / 5000;
   let ret = 0;
-  for (let l = 0; l < 20; l++) {
-    by*=lambda;
-    ay*=base;
-    let bx=0.01;
-    ax=20;
-    for (let k = 0; k < 20; k++) {
-      ax*=base;
-      bx*=lambda;
-      ret += rand[l][k]*ax *ay* sin(bx * i+by * j);
+  for (let i = 0; i < maxfreq; i++)
+    for (let j = 0; j < maxfreq; j++) {
+      ret += 100*a[i][j] * sin(k * (i * x + j * y) + phi[i][j]);
     }
+  return ret;
+}
+
+function weierstrass(x, y) {
+  let b = 1;
+  let amp = 1;
+  let lambda = 1.5;
+  let base = 0.5;
+  let ret = 0;
+  for (let k = 0; k < 10; k++) {
+    amp *= base;
+    b *= lambda;
+    ret += amp * noise2d(b * x, b * y);
   }
   return ret;
 }
