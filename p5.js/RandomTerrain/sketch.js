@@ -2,26 +2,27 @@ let terrain;
 let maxfreq = 10;
 let a = [];
 let phi = [];
+let xpos=0;
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   noStroke();
   camera(0, -150, 300);
-  for (let l = 0; l < maxfreq; l++) {
+  for (let l = 1; l < maxfreq; l++) {
     a[l] = [];
     phi[l] = [];
-    for (let k = 0; k < maxfreq; k++) {
+    for (let k = 1; k < maxfreq; k++) {
       a[l][k] = Math.random();
       phi[l][k] = Math.random() * Math.PI * 2;
     }
   }
-  terrain = meshFromNoise();
+  terrain = meshFromNoise(256,256,xpos);
 }
 
 function draw() {
   background(0);
 
-  orbitControl(2, 1, 0.05);
+  //orbitControl(2, 1, 0.05);
 
   directionalLight(255, 255, 255, 0.5, 1, -0.5);
 
@@ -30,13 +31,15 @@ function draw() {
   rotateX(PI / 2);
   scale(1, 1, 50 / 255);
   model(terrain);
+  xpos +=10;
+  terrain=meshFromNoise(256,256,xpos);
 }
 
 function onWindowsResize() {
   resizeCanvas(WindowWidth, WindowHeight);
 }
 
-function meshFromNoise(detailX = 700, detailY = 700) {
+function meshFromNoise(detailX = 256, detailY = 256,xpos) {
   return new p5.Geometry(
     detailX,
     detailY,
@@ -50,7 +53,7 @@ function meshFromNoise(detailX = 700, detailY = 700) {
       let values = [];
       for (let j = 0; j <= detailY; j++) {
         for (let i = 0; i <= detailX; i++) {
-          let v = weierstrass(i, j);
+          let v = weierstrass(i, j+xpos);
           this.vertices.push(new p5.Vector(
             xoff + i * unitX,
             yoff + j * unitY,
@@ -69,10 +72,10 @@ function meshFromNoise(detailX = 700, detailY = 700) {
 }
 
 function noise2d(x, y) {
-  let k = 2 * PI / 5000;
+  let k = 2 * PI / 2000;
   let ret = 0;
-  for (let i = 0; i < maxfreq; i++)
-    for (let j = 0; j < maxfreq; j++) {
+  for (let i = 1; i < maxfreq; i++)
+    for (let j = 1; j < maxfreq; j++) {
       ret += 100*a[i][j] * sin(k * (i * x + j * y) + phi[i][j]);
     }
   return ret;
@@ -81,13 +84,13 @@ function noise2d(x, y) {
 function weierstrass(x, y) {
   let b = 1;
   let amp = 1;
-  let lambda = 1.5;
+  let lambda = 1.9;
   let base = 0.5;
   let ret = 0;
-  for (let k = 0; k < 10; k++) {
+  for (let k = 0; k < maxfreq; k++) {
+    ret += amp * noise2d(b * x, b * y);
     amp *= base;
     b *= lambda;
-    ret += amp * noise2d(b * x, b * y);
   }
   return ret;
 }
