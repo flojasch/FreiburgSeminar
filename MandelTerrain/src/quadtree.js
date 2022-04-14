@@ -70,6 +70,8 @@ export const quadtree = (function () {
       this._plane.geometry.computeVertexNormals();
     }
 
+
+    
     setHeight(j, i) {
       const R = 1024;
       const maxiter = 100;
@@ -110,6 +112,23 @@ export const quadtree = (function () {
     constructor(terrain) {
       this._terrain = terrain;
       this._cam = terrain._camera.position;
+      let maxFreq=10;
+      
+      this.a=[];
+      this.siphi=[];
+      this.cophi=[];
+      for(let l=0;l<maxFreq;l++){
+        this.siphi[l]=[];
+        this.cophi[l]=[];
+        this.a[l]=[];
+        for(let k=0;k<maxFreq;k++){
+          this.a[l][k]=Math.random();
+          let phi=2*Math.PI*Math.random();
+          this.siphi[l][k]=Math.sin(phi);
+          this.cophi[l][k]=Math.cos(phi);
+        }
+      }
+
       this._root = {
         children: [],
         x: 0.0,
