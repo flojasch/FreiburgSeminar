@@ -1,12 +1,14 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
+import perlin from 'https://cdn.jsdelivr.net/gh/mikechambers/es6-perlin-module/perlin.js';
 
 export const quadtree = (function () {
 
-  const MIN_SIZE = 100;
+  const MIN_SIZE = 500;
   const SCALE=Math.PI / 10000;
-  const HEIGHT=50;
-  const TERRAIN_SIZE = 5000;
+  const HEIGHT=1000;
+  const TERRAIN_SIZE = 50000;
   const MAX_POW=5;
+  const RESOLUTION=100;
   
   class TerrainChunk {
     constructor(params) {
@@ -14,7 +16,7 @@ export const quadtree = (function () {
       this.rand = params.randomVals;
       this._offset = params.offset;
       this._power = 0.5;
-      this._res = 50;
+      this._res = RESOLUTION;
       this._size = params.size;
       this._Init();
     }
@@ -45,7 +47,7 @@ export const quadtree = (function () {
       let vc=new THREE.Color(0x2596BE);
       if (h > -9.0) {
         const GRAY = new THREE.Color(0xFFFFFF);
-        let a = sat(0.2*h / HEIGHT);
+        let a = sat(h / HEIGHT);
         vc = new THREE.Color(0x46b00c);
         vc.lerp(GRAY, a);
       }
@@ -114,10 +116,11 @@ export const quadtree = (function () {
       let base = 0.5; //0.6;
       let ret = 0;
       for (let k = 0; k < maxPow; k++) {
-        ret += amp * this.fourierNoise(b * x, b * y);
+        ret += amp * (2.0*perlin(b*x,b*y)-1.0);
         amp *= base;
         b *= lambda;
       }
+      ret=Math.exp(1.2*ret)-0.8;
       return HEIGHT*(ret);
     }
 

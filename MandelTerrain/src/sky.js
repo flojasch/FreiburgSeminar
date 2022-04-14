@@ -13,7 +13,7 @@ export const sky = (function() {
     }
 
     _Init(params) {
-      const waterGeometry = new THREE.PlaneBufferGeometry(10000, 10000, 100, 100);
+      const waterGeometry = new THREE.PlaneBufferGeometry(20000, 20000, 200, 200);
 
       this._water = new Water(
         waterGeometry,
