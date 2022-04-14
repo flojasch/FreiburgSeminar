@@ -103,7 +103,7 @@ export const quadtree = (function () {
       const pow = Math.pow(d, this._power);
       return this._height * pow;
     }
-
+    
   }
 
   class QuadTree {
