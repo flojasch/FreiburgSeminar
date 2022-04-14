@@ -2,18 +2,19 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.m
 
 export const quadtree = (function () {
 
-  const TERRAIN_SIZE = 10000;
-  const MIN_SIZE = 25;
-  const HEIGHT = 100;
-
+  const MIN_SIZE = 100;
+  const SCALE=Math.PI / 10000;
+  const HEIGHT=50;
+  const TERRAIN_SIZE = 5000;
+  const MAX_POW=5;
+  
   class TerrainChunk {
     constructor(params) {
       this._params = params;
       this.rand = params.randomVals;
       this._offset = params.offset;
-      this._height = HEIGHT;
       this._power = 0.5;
-      this._res = 25;
+      this._res = 50;
       this._size = params.size;
       this._Init();
     }
@@ -44,7 +45,7 @@ export const quadtree = (function () {
       let vc=new THREE.Color(0x2596BE);
       if (h > -9.0) {
         const GRAY = new THREE.Color(0xFFFFFF);
-        let a = sat(0.2*h / this._height);
+        let a = sat(0.2*h / HEIGHT);
         vc = new THREE.Color(0x46b00c);
         vc.lerp(GRAY, a);
       }
@@ -55,7 +56,7 @@ export const quadtree = (function () {
       const heights = [];
       for (let k in this._plane.geometry.vertices) {
         const v = this._plane.geometry.vertices[k];
-        v.z = this.weierstrass(v.x + this._offset.x, v.y + this._offset.y,9);
+        v.z = this.weierstrass(v.x + this._offset.x, v.y + this._offset.y,MAX_POW);
         heights.push(v.z);
       }
 
@@ -105,20 +106,19 @@ export const quadtree = (function () {
     }
 
     weierstrass(x, y,maxPow) {
-      const scale = Math.PI / 15000;
-      x = x * scale;
-      y = y * scale;
+      x = x * SCALE;
+      y = y * SCALE;
       let b = 1;
-      let amp = 200;
+      let amp = 1;
       let lambda = 2; //1.5;
       let base = 0.5; //0.6;
       let ret = 0;
       for (let k = 0; k < maxPow; k++) {
-        ret += amp * (this.fourierNoise(b * x, b * y) + 1.0);
+        ret += amp * this.fourierNoise(b * x, b * y);
         amp *= base;
         b *= lambda;
       }
-      return Math.max(ret, -10);
+      return HEIGHT*(ret);
     }
 
     mandelBrot(ykoord, xkoord) {
@@ -159,7 +159,7 @@ export const quadtree = (function () {
 
   class RandomVals {
     constructor() {
-      this.maxFreq = 5;
+      this.maxFreq = 10;
       this.a = [];
       this.siphi = [];
       this.cophi = [];

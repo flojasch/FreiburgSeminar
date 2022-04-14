@@ -17,13 +17,9 @@ import {
 
 
 let _APP = null;
-const HEIGHT = 100;
-const TERRAIN_SIZE = 10000;
-
 
 class Terrain {
   constructor(params) {
-    this._terrainSize = TERRAIN_SIZE;
     this._camera = params.camera;
     this._camSec = new THREE.Vector3();
     this._Init(params);
@@ -38,8 +34,8 @@ class Terrain {
       wireframe: false,
     };
     params.guiParams.mandel = {
-      height: HEIGHT,
       power: 0.5,
+      height:10,
     };
 
     this._group = new THREE.Group()

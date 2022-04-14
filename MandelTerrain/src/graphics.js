@@ -30,7 +30,7 @@ export const graphics = (function() {
       const near = 0.1;
       const far = 50000.0;
       this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-      this._camera.position.set(0, 10000, 50);
+      this._camera.position.set(0, 500, 50);
 
       this._scene = new THREE.Scene();
       this._scene.background = new THREE.Color(0xaaaaaa);
