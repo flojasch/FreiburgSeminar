@@ -34,7 +34,7 @@ export const sky = (function() {
         }
       );
       this._water.rotation.x = - Math.PI / 2;
-      this._water.position.y = 0.1;
+      this._water.position.y = 2.0;
 
       this._sky = new Sky();
       this._sky.scale.setScalar(10000);

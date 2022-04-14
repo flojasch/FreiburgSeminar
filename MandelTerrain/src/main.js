@@ -18,7 +18,7 @@ import {
 
 let _APP = null;
 const HEIGHT = 100;
-const TERRAIN_SIZE = 5000;
+const TERRAIN_SIZE = 10000;
 
 
 class Terrain {

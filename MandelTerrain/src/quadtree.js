@@ -2,17 +2,18 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.m
 
 export const quadtree = (function () {
 
-  const TERRAIN_SIZE = 50000;
+  const TERRAIN_SIZE = 10000;
   const MIN_SIZE = 25;
-  const HEIGHT = 1000;
+  const HEIGHT = 100;
 
   class TerrainChunk {
     constructor(params) {
       this._params = params;
+      this.rand = params.randomVals;
       this._offset = params.offset;
       this._height = HEIGHT;
       this._power = 0.5;
-      this._res = 50;
+      this._res = 25;
       this._size = params.size;
       this._Init();
     }
@@ -40,10 +41,13 @@ export const quadtree = (function () {
       function sat(x) {
         return Math.min(Math.max(x, 0.0), 1.0);
       }
-      const GREEN = new THREE.Color(0x46b00c);
-      let a = sat(h / this._height);
-      let vc = new THREE.Color(0xFFFFFF);
-      vc.lerp(GREEN, a);
+      let vc=new THREE.Color(0x2596BE);
+      if (h > -9.0) {
+        const GRAY = new THREE.Color(0xFFFFFF);
+        let a = sat(0.2*h / this._height);
+        vc = new THREE.Color(0x46b00c);
+        vc.lerp(GRAY, a);
+      }
       vertexColours.push(vc);
     }
 
@@ -51,7 +55,7 @@ export const quadtree = (function () {
       const heights = [];
       for (let k in this._plane.geometry.vertices) {
         const v = this._plane.geometry.vertices[k];
-        v.z = this.setHeight(v.x + this._offset.x, v.y + this._offset.y);
+        v.z = this.weierstrass(v.x + this._offset.x, v.y + this._offset.y,9);
         heights.push(v.z);
       }
 
@@ -65,14 +69,59 @@ export const quadtree = (function () {
         f.vertexColors = vertexColours;
       }
       this._plane.geometry.elementsNeedUpdate = true;
-
       this._plane.geometry.verticesNeedUpdate = true;
       this._plane.geometry.computeVertexNormals();
     }
 
+    fourierNoise(x, y) {
+      const six = Math.sin(x);
+      const cox = Math.cos(x);
+      const siy = Math.sin(y);
+      const coy = Math.cos(y);
+      let imx = 0;
+      let rex = 1;
+      let imy = 0;
+      let rey = 1;
+      let reh;
+      let zx, zy;
+      let ret = 0;
 
-    
-    setHeight(j, i) {
+      for (let i = 0; i < this.rand.maxFreq; i++) {
+        reh = cox * rex - six * imx;
+        imx = rex * six + imx * cox;
+        rex = reh;
+        rey = 1;
+        imy = 0;
+        for (let j = 0; j < this.rand.maxFreq; j++) {
+          reh = coy * rey - siy * imy;
+          imy = rey * siy + imy * coy;
+          rey = reh;
+          zx = rex * rey - imx * imy;
+          zy = rex * imy + imx * rey;
+          ret += this.rand.a[i][j] * (zx * this.rand.siphi[i][j] + zy * this.rand.cophi[i][j]);
+        }
+      }
+      return ret;
+    }
+
+    weierstrass(x, y,maxPow) {
+      const scale = Math.PI / 15000;
+      x = x * scale;
+      y = y * scale;
+      let b = 1;
+      let amp = 200;
+      let lambda = 2; //1.5;
+      let base = 0.5; //0.6;
+      let ret = 0;
+      for (let k = 0; k < maxPow; k++) {
+        ret += amp * (this.fourierNoise(b * x, b * y) + 1.0);
+        amp *= base;
+        b *= lambda;
+      }
+      return Math.max(ret, -10);
+    }
+
+    mandelBrot(ykoord, xkoord) {
       const R = 1024;
       const maxiter = 100;
       let x = 0,
@@ -81,8 +130,8 @@ export const quadtree = (function () {
         n;
       let dx = 0,
         dy = 0;
-      cx = i * 3. / TERRAIN_SIZE - 0.7;
-      cy = j * 3. / TERRAIN_SIZE;
+      cx = xkoord * 3. / TERRAIN_SIZE - 0.7;
+      cy = ykoord * 3. / TERRAIN_SIZE;
       let c2 = cx * cx + cy * cy;
       if (256.0 * c2 * c2 - 96.0 * c2 + 32.0 * cx - 3.0 < 0.0) return 0.0;
       if (16.0 * (c2 + 2.0 * cx + 1.0) - 1.0 < 0.0) return 0.0;
@@ -105,30 +154,34 @@ export const quadtree = (function () {
       const pow = Math.pow(d, this._power);
       return this._height * pow;
     }
-    
+
+  }
+
+  class RandomVals {
+    constructor() {
+      this.maxFreq = 5;
+      this.a = [];
+      this.siphi = [];
+      this.cophi = [];
+      for (let l = 0; l < this.maxFreq; l++) {
+        this.siphi[l] = [];
+        this.cophi[l] = [];
+        this.a[l] = [];
+        for (let k = 0; k < this.maxFreq; k++) {
+          this.a[l][k] = Math.random();
+          let phi = 2 * Math.PI * Math.random();
+          this.siphi[l][k] = Math.sin(phi);
+          this.cophi[l][k] = Math.cos(phi);
+        }
+      }
+    }
   }
 
   class QuadTree {
     constructor(terrain) {
       this._terrain = terrain;
       this._cam = terrain._camera.position;
-      let maxFreq=10;
-      
-      this.a=[];
-      this.siphi=[];
-      this.cophi=[];
-      for(let l=0;l<maxFreq;l++){
-        this.siphi[l]=[];
-        this.cophi[l]=[];
-        this.a[l]=[];
-        for(let k=0;k<maxFreq;k++){
-          this.a[l][k]=Math.random();
-          let phi=2*Math.PI*Math.random();
-          this.siphi[l][k]=Math.sin(phi);
-          this.cophi[l][k]=Math.cos(phi);
-        }
-      }
-
+      this._randomVals = new RandomVals();
       this._root = {
         children: [],
         x: 0.0,
@@ -165,6 +218,7 @@ export const quadtree = (function () {
           group: this._terrain._group,
           offset: new THREE.Vector3(node.x, node.y, 0),
           size: 2 * node.size,
+          randomVals: this._randomVals,
         });
       }
     }
