@@ -1,13 +1,8 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
 import {
-  GUI
-} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/libs/dat.gui.module.js';
-import {
-  OrbitControls
-} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/controls/OrbitControls.js';
-import {
-  sky
-} from './sky.js';
+  Water
+} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/objects/Water.js';
+
 import {
   game
 } from './game.js';
@@ -21,8 +16,49 @@ import {
 } from './quadtree.js';
 
 
+
 let _APP = null;
-const TERRAIN_SIZE = 25000;
+const TERRAIN_SIZE = 5000;
+
+class WaterSurf {
+  constructor(params) {
+    this._camPos = params.camPos;
+    this._Init(params);
+  }
+  _Init(params) {
+    const waterSize = 5000*Math.sqrt(3)+5;
+     //const geometry = new THREE.PlaneBufferGeometry(waterSize, waterSize, 100, 100);
+    const geometry=new THREE.SphereBufferGeometry(waterSize,100,100);
+    this._water = new Water(
+      geometry, {
+        textureWidth: 2048,
+        textureHeight: 2048,
+        waterNormals: new THREE.TextureLoader().load('resources/waternormals.jpg', function (texture) {
+          texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        }),
+        alpha: 0.5,
+        sunDirection: new THREE.Vector3(1, 0, 0),
+        sunColor: 0xffffff,
+        waterColor: 0x001e0f,
+        distortionScale: 0.0,
+        fog: undefined
+      }
+    );
+
+    this._water.rotation.x = -Math.PI/2 ;
+    this._water.position.x=0;
+    this._water.position.y=0;
+    this._water.position.z=0;  
+    params.scene.add(this._water);
+  }
+  Update(timeInSeconds) {
+    this._water.material.uniforms['time'].value += timeInSeconds;
+    // this._water.position.x = this._camPos.x;
+    // this._water.position.z = this._camPos.z;
+  
+  }
+
+}
 
 class Terrain {
   constructor(params) {
@@ -60,7 +96,7 @@ class Terrain {
       tx: 1,
       ty: 0
     });
-   //backside
+    //backside
     m = new THREE.Matrix4();
     m.makeRotationY(-Math.PI);
     rotations.push({
@@ -95,7 +131,7 @@ class Terrain {
   }
 
   Update(timeInSeconds) {
-    for (let side of this.sides){
+    for (let side of this.sides) {
       side.Rebuild(side._root);
       side.Update(side._root);
     }
@@ -108,40 +144,21 @@ class ProceduralTerrain_Demo extends game.Game {
     super();
   }
 
-  _CreateControls() {
-    const controls = new OrbitControls(
-      this._graphics._camera, this._graphics._threejs.domElement);
-    controls.target.set(0, 50, 0);
-    controls.object.position.set(475, 345, 900);
-    controls.update();
-    return controls;
-  }
-
   _OnInitialize() {
-    //this._CreateGUI();
-    //this._CreateControls();
     this._entities['_terrain'] = new Terrain({
       scene: this._graphics.Scene,
       camPos: this._graphics._camera.position,
     });
 
-    // this._entities['_sky'] = new sky.TerrainSky({
-    //   camera: this._graphics.Camera,
-    //   scene: this._graphics.Scene,
-    //   gui: this._gui,
-    //   guiParams: this._guiParams,
-    // });
+    this._entities['_water'] = new WaterSurf({
+      scene: this._graphics._scene,
+      camPos: this._graphics._camera.position,
+    });
 
     this._entities['control'] = new controls.Controls({
       _camera: this._graphics._camera
     });
 
-  }
-
-  _CreateGUI() {
-    this._guiParams = {};
-    this._gui = new GUI();
-    this._gui.close();
   }
 
   _OnStep(timeInSeconds) {}

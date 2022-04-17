@@ -1,7 +1,7 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
 
-import {Sky} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/objects/Sky.js';
-import {Water} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/objects/Water.js';
+import {Sky} from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/objects/Sky.js';
+import {Water} from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/objects/Water.js';
 
 
 export const sky = (function() {
@@ -13,7 +13,7 @@ export const sky = (function() {
     }
 
     _Init(params) {
-      const waterGeometry = new THREE.PlaneBufferGeometry(20000, 20000, 200, 200);
+      const waterGeometry = new THREE.PlaneBufferGeometry(30000, 30000, 300, 300);
 
       this._water = new Water(
         waterGeometry,
@@ -21,9 +21,7 @@ export const sky = (function() {
           textureWidth: 2048,
           textureHeight: 2048,
           waterNormals: new THREE.TextureLoader().load( 'resources/waternormals.jpg', function ( texture ) {
-
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-
           } ),
           alpha: 0.5,
           sunDirection: new THREE.Vector3(1, 0, 0),

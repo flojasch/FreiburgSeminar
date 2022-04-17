@@ -1,8 +1,8 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
 
 import {
   GLTFLoader
-} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
+} from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/loaders/GLTFLoader.js';
 
 import {
   math
@@ -16,12 +16,149 @@ import {
 import {
   menger
 } from './menger.js';
+import {
+  quadtree
+} from './quadtree.js';
+import {
+  Water
+} from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/objects/Water.js';
+
+
 
 let _APP = null;
 
+class WaterSurf {
+  constructor(params) {
+    this._camPos = params.camPos;
+    this._Init(params);
+  }
+  _Init(params) {
+    const waterGeometry = new THREE.PlaneBufferGeometry(10000, 10000, 100, 100);
+
+    this._water = new Water(
+      waterGeometry, {
+        textureWidth: 2048,
+        textureHeight: 2048,
+        waterNormals: new THREE.TextureLoader().load('images/waternormals.jpg', function (texture) {
+          texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        }),
+        alpha: 0.5,
+        sunDirection: new THREE.Vector3(1, 0, 0),
+        sunColor: 0xffffff,
+        waterColor: 0x001e0f,
+        distortionScale: 0.0,
+        fog: undefined
+      }
+    );
+    this._water.rotation.x = -Math.PI / 2;
+    this._water.position.y = 0.0;
+    params.scene.add(this._water);
+  }
+  Update(timeInSeconds) {
+    this._water.material.uniforms['time'].value += timeInSeconds;
+
+    this._water.position.x = this._camPos.x;
+    this._water.position.y = this._camPos.y - 100;
+    this._water.position.z = this._camPos.z;
+  }
+  get Position() {
+    return new THREE.Vector3();
+  }
+  get Radius() {
+    return -1;
+  }
+
+}
+
+class Terrain {
+  constructor(params) {
+    this._terrainSize = 5000;
+    this.sides = [];
+    this.MakeSides(params);
+  }
+
+  MakeSides(params) {
+    const group = new THREE.Group();
+    params.scene.add(group);
+
+    let m;
+    const rotations = [];
+    //top
+    m = new THREE.Matrix4();
+    m.makeRotationX(-Math.PI / 2);
+    rotations.push({
+      m,
+      tx: -1,
+      ty: 0,
+    });
+
+    m = new THREE.Matrix4();
+    rotations.push({
+      m,
+      tx: 0,
+      ty: 0
+    });
+
+    m = new THREE.Matrix4();
+    m.makeRotationX(Math.PI / 2);
+    rotations.push({
+      m,
+      tx: 1,
+      ty: 0
+    });
+    //backside
+    m = new THREE.Matrix4();
+    m.makeRotationY(-Math.PI);
+    rotations.push({
+      m,
+      tx: 0,
+      ty: -2
+    });
+
+    m = new THREE.Matrix4();
+    m.makeRotationY(Math.PI / 2);
+    rotations.push({
+      m,
+      tx: 0,
+      ty: 1
+    });
+
+    m = new THREE.Matrix4();
+    m.makeRotationY(-Math.PI / 2);
+    rotations.push({
+      m,
+      tx: 0,
+      ty: -1
+    });
+
+    for (let rot of rotations)
+      this.sides.push(new quadtree.QuadTree({
+        terrainSize: this._terrainSize,
+        group: group,
+        camPos: params.camPos,
+        matrix: rot,
+      }));
+  }
+
+  Update(timeInSeconds) {
+    for (let side of this.sides) {
+      side.Rebuild(side._root);
+      side.Update(side._root);
+    }
+  }
+
+  get Position() {
+    return new THREE.Vector3();
+  }
+  get Radius() {
+    return Math.sqrt(3) * (this._terrainSize * 1.01);
+  }
+
+}
+
 class ExplodeParticles {
   constructor(game) {
-    this._sound=game._bombsound;
+    this._sound = game._bombsound;
     this._particleSystem = new particles.ParticleSystem(
       game._scene, {
         texture: "./images/explosion.png"
@@ -92,11 +229,11 @@ class PlayerEntity {
   constructor(game) {
     this._game = game;
     this._model = game._model;
-    this._camera=game._camera;
+    this._camera = game._camera;
     this._camera.add(game._model);
-   
+
     game._model.position.set(0, -1.5, -3);
-    
+
     this._fireCooldown = 0.0;
     this._health = 1000.0;
   }
@@ -139,8 +276,8 @@ class Blaster {
   constructor(game) {
     this._blaster = [];
     this._entities = game._entities;
-    this._scene=game._scene;
-    this._model=game._model;
+    this._scene = game._scene;
+    this._model = game._model;
   }
   _Push(blasterSystem) {
     this._blaster.push(blasterSystem);
@@ -152,19 +289,19 @@ class Blaster {
       this._RemoveOld(blaSys);
     });
   }
-  _RemoveOld(blaSys){
-    if(!blaSys.isAlive){
+  _RemoveOld(blaSys) {
+    if (!blaSys.isAlive) {
       this._blaster.splice(this._blaster.indexOf(blaSys), 1);
       this._scene.remove(blaSys.obj);
     }
   }
-  _Hits(blaSys){
+  _Hits(blaSys) {
     for (let name in this._entities) {
       const r = blaSys.Position;
       if (blaSys._Hit(this._entities[name])) {
         this._entities['_explosionSystem'].Splode(r);
-        blaSys.isAlive=false;
-      }  
+        blaSys.isAlive = false;
+      }
     }
   }
 
@@ -180,7 +317,7 @@ class BlasterSystem {
   constructor(params) {
     this.model = params.model;
     this.scene = params.scene;
-    this._vel = new THREE.Vector3(0, 0, 70);
+    this._vel = new THREE.Vector3(0, 0, 200);
     const Q = new THREE.Quaternion;
     this.model.getWorldQuaternion(Q);
     this._vel.applyQuaternion(Q);
@@ -203,17 +340,17 @@ class BlasterSystem {
         this.obj.add(cyl);
       }
     this.scene.add(this.obj);
-    this.liveTime=0.0;
-    this.isAlive=true;
+    this.liveTime = 0.0;
+    this.isAlive = true;
     params.sound.play();
   }
   Update(timeInSeconds) {
     const dR = this._vel.clone();
     dR.multiplyScalar(timeInSeconds);
     this.obj.position.sub(dR);
-    this.liveTime +=timeInSeconds;
-    if(this.liveTime > 4.0)
-      this.isAlive=false;
+    this.liveTime += timeInSeconds;
+    if (this.liveTime > 4.0)
+      this.isAlive = false;
   }
 
   _Hit(entity) {
@@ -224,7 +361,7 @@ class BlasterSystem {
 
   get Position() {
     return this.obj.position.clone();
-  }  
+  }
 
 }
 
@@ -232,7 +369,7 @@ class Planet {
   constructor(params) {
     this._position = params.position;
     this._scene = params.scene;
-    this._radius = 200;
+    this._radius = 1000;
     const geometry = new THREE.SphereGeometry(this._radius, 60, 60);
     const loader = new THREE.TextureLoader();
     const texture = loader.load('./images/earth.jpg');
@@ -259,10 +396,10 @@ class BattleGame {
     this._threejs = new THREE.WebGLRenderer({
       antialias: true,
     });
-    
+
     this._threejs.setPixelRatio(window.devicePixelRatio);
-    this._width=window.innerWidth;
-    this._height=window.innerHeight;
+    this._width = window.innerWidth;
+    this._height = window.innerHeight;
     this._threejs.setSize(this._width, this._height);
 
     document.body.appendChild(this._threejs.domElement);
@@ -309,35 +446,43 @@ class BattleGame {
     this._SetSound();
     this._CreatePlayer();
 
-    this._entities['_earth'] = new Planet({
-      scene: this._scene,
-      position: new THREE.Vector3()
-    })
+    // this._entities['_earth'] = new Planet({
+    //   scene: this._scene,
+    //   position: new THREE.Vector3()
+    // });
 
+    this._entities['_terrain'] = new Terrain({
+      scene: this._scene,
+      camPos: this._camera.position,
+    });
+    // this._entities['_water'] = new WaterSurf({
+    //   scene: this._scene,
+    //   camPos: this._camera.position,
+    // });
     this._entities['_explosionSystem'] = new ExplodeParticles(this);
     this._entities['_blaster'] = new Blaster(this);
-    this._entities['_menger']=new menger.Menger(this._camera);
+    //this._entities['_menger']=new menger.Menger(this._camera);
   }
 
   _SetCamera() {
     const fov = 75;
-    const aspect = this._width/this._height;
+    const aspect = this._width / this._height;
     const near = 0.1;
-    const far = 1000;
+    const far = 500000;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camera.position.set(0, 0, 500);
+    this._camera.position.set(0, 0, 20000);
     this._scene.add(this._camera);
   }
 
   _SetSound() {
     const listener = new THREE.AudioListener();
     const audioLoader = new THREE.AudioLoader();
-    
+
     this._lasersound = new THREE.Audio(listener);
     audioLoader.load('sounds/laser.wav', (buffer) => {
       this._lasersound.setBuffer(buffer);
     });
-     
+
     this._bombsound = new THREE.Audio(listener);
     audioLoader.load('sounds/bomb.wav', (buffer) => {
       this._bombsound.setBuffer(buffer);
@@ -346,12 +491,13 @@ class BattleGame {
 
   _SetLight() {
     let light = new THREE.DirectionalLight(0xFFFFFF, 1.0);
-    light.position.set(100, 100, -100);
+    light.position.set(100, 100, 100);
     light.target.position.set(0, 0, 0);
     this._scene.add(light);
 
     light = new THREE.AmbientLight(0xFFFFFF, 0.1);
     this._scene.add(light);
+
 
   }
 
@@ -361,7 +507,7 @@ class BattleGame {
       gltf.scene.scale.set(0.54, 0.54, 0.54);
       gltf.scene.rotation.y = Math.PI;
       gltf.scene.position.set(0, -0.1, -1.5);
-      
+
       this._model.add(gltf.scene);
       this._entities['player'] = new PlayerEntity(this);
 
@@ -383,8 +529,8 @@ class BattleGame {
   }
 
   _OnWindowResize() {
-    this._width=window.innerWidth;
-    this._height=window.innerHeight;
+    this._width = window.innerWidth;
+    this._height = window.innerHeight;
     this._camera.aspect = this._width / this._height;
     this._camera.updateProjectionMatrix();
     this._threejs.setSize(this._width, this._height);

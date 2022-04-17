@@ -1,3 +1,5 @@
+import perlin from 'https://cdn.jsdelivr.net/gh/mikechambers/es6-perlin-module/perlin.js';
+
 export const math = (function() {
   return {
     rand_range: function(a, b) {
@@ -34,5 +36,22 @@ export const math = (function() {
     sat: function(x) {
       return Math.min(Math.max(x, 0.0), 1.0);
     },
+
+    weierstrass: function(x, y,z) {
+      const maxPow=4;
+      let b = 1;
+      let amp = 1;
+      let lambda = 2; //1.5;
+      let base = 0.5; //0.6;
+      let ret = 0;
+      for (let k = 0; k < maxPow; k++) {
+        ret += amp * (2.0*perlin(b*x,b*y,b*z)-1.0);
+        amp *= base;
+        b *= lambda;
+      }
+      ret=Math.max(Math.exp(1.2*ret)-0.8,0);
+      return ret;
+    },
+
   };
 })();

@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
 
 export const controls = (function () {
 
@@ -95,7 +95,7 @@ export const controls = (function () {
       const _Q = new THREE.Quaternion();
       const _A = new THREE.Vector3();
       const _R = cameraFrame.quaternion.clone();
-      const _vel = new THREE.Vector3(0, 0, .8);
+      const _vel = new THREE.Vector3(0, 0, 10);
       _vel.applyQuaternion(_R);
       if (this._move.left) {
         _A.set(0, 1, 0);
@@ -164,7 +164,6 @@ export const controls = (function () {
     get Radius(){
       return -1;//kann nicht getroffen werden
     }
-  
   }
 
   return {
