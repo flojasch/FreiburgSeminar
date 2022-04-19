@@ -15,10 +15,8 @@ import {
   quadtree
 } from './quadtree.js';
 
-
-
 let _APP = null;
-const TERRAIN_SIZE = 5000;
+const TERRAIN_SIZE = 10000;
 
 class WaterSurf {
   constructor(params) {
@@ -26,7 +24,7 @@ class WaterSurf {
     this._Init(params);
   }
   _Init(params) {
-    const waterSize = 5000*Math.sqrt(3)+5;
+    const waterSize = TERRAIN_SIZE*Math.sqrt(3)+5;
      //const geometry = new THREE.PlaneBufferGeometry(waterSize, waterSize, 100, 100);
     const geometry=new THREE.SphereBufferGeometry(waterSize,100,100);
     this._water = new Water(
@@ -37,7 +35,7 @@ class WaterSurf {
           texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
         }),
         alpha: 0.5,
-        sunDirection: new THREE.Vector3(1, 0, 0),
+        sunDirection: new THREE.Vector3(-1, 1, -1),
         sunColor: 0xffffff,
         waterColor: 0x001e0f,
         distortionScale: 0.0,
@@ -46,9 +44,8 @@ class WaterSurf {
     );
 
     this._water.rotation.x = -Math.PI/2 ;
-    this._water.position.x=0;
-    this._water.position.y=0;
-    this._water.position.z=0;  
+    this._water.position.set(0,0,0);
+   
     params.scene.add(this._water);
   }
   Update(timeInSeconds) {
@@ -150,15 +147,29 @@ class ProceduralTerrain_Demo extends game.Game {
       camPos: this._graphics._camera.position,
     });
 
-    this._entities['_water'] = new WaterSurf({
-      scene: this._graphics._scene,
-      camPos: this._graphics._camera.position,
-    });
+    // this._entities['_water'] = new WaterSurf({
+    //   scene: this._graphics._scene,
+    //   camPos: this._graphics._camera.position,
+    // });
 
     this._entities['control'] = new controls.Controls({
       _camera: this._graphics._camera
     });
+    this._LoadBackground();
+  }
 
+  _LoadBackground() {
+    this._graphics.Scene.background = new THREE.Color(0x000000);
+    const loader = new THREE.CubeTextureLoader();
+    const texture = loader.load([
+        './resources/space-posx.jpg',
+        './resources/space-negx.jpg',
+        './resources/space-posy.jpg',
+        './resources/space-negy.jpg',
+        './resources/space-posz.jpg',
+        './resources/space-negz.jpg',
+    ]);
+    this._graphics._scene.background = texture;
   }
 
   _OnStep(timeInSeconds) {}

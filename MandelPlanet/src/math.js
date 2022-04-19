@@ -37,13 +37,11 @@ export const math=(function(){
             return this._height * pow;
         },
 
-        weierstrass: function(x, y,height,scale,maxPow) {
-            x = x * scale;
-            y = y * scale;
+        weierstrass: function(x, y,maxPow) {
             let b = 1;
             let amp = 1;
             let lambda = 2; //1.5;
-            let base = 0.5; //0.6;
+            let base = 0.45; //0.6;
             let ret = 0;
             for (let k = 0; k < maxPow; k++) {
               ret += amp * (2.0*perlin(b*x,b*y)-1.0);
@@ -51,7 +49,7 @@ export const math=(function(){
               b *= lambda;
             }
             ret=Math.exp(1.7*ret)-1.;
-            return height*(ret);
+            return ret;
           }
 
     };

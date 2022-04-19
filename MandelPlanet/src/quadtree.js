@@ -4,8 +4,8 @@ import {math} from './math.js';
 export const quadtree = (function () {
 
   const MIN_SIZE = 100;
-  const HEIGHT = 100;
-  const SCALE=Math.PI / 5000;
+  const HEIGHT = 200;
+  const SCALE=Math.PI / 10000;
   const MAX_POW=6;
   const RESOLUTION=100;
 
@@ -62,7 +62,9 @@ export const quadtree = (function () {
         v.add(this._position);
         let vx= v.x+this._terrainSize * this._params.ty*2;
         let vy= v.y-this._terrainSize * this._params.tx*2;
-        let height = math.weierstrass(vx, vy,HEIGHT,SCALE,MAX_POW);
+        vx *=SCALE;
+        vy *=SCALE;
+        let height = HEIGHT*math.weierstrass(vx, vy,MAX_POW);
         v.multiplyScalar((this._radius + height) / v.length());
         v.applyMatrix4(this._matrix);
         heights.push(height);
