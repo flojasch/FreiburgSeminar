@@ -4,9 +4,11 @@ export const controls = (function () {
 
   class _Controls {
     constructor(player) {
+      this._speed = 0;
+      this._maxSpeed = 20;
       this._Init(player);
     }
-  
+
     _Init(player) {
       this._player = player;
       this._move = {
@@ -20,11 +22,11 @@ export const controls = (function () {
         backward: false,
         fire: false,
       }
-  
+
       document.addEventListener('keydown', (e) => this._onKeyDown(e), false);
       document.addEventListener('keyup', (e) => this._onKeyUp(e), false);
     }
-  
+
     _onKeyDown(event) {
       switch (event.keyCode) {
         case 37: // keyleft
@@ -56,7 +58,7 @@ export const controls = (function () {
           break;
       }
     }
-  
+
     _onKeyUp(event) {
       switch (event.keyCode) {
         case 37: // keyleft
@@ -88,15 +90,16 @@ export const controls = (function () {
           break;
       }
     }
-  
-    Update(time) {
-      const ang = time;
+
+    Update(timeIncr) {
+      const ang = timeIncr * 2.5;
       const cameraFrame = this._player._camera;
       const _Q = new THREE.Quaternion();
       const _A = new THREE.Vector3();
       const _R = cameraFrame.quaternion.clone();
-      const _vel = new THREE.Vector3(0, 0, 20);
+      const _vel = new THREE.Vector3(0, 0, 1);
       _vel.applyQuaternion(_R);
+
       if (this._move.left) {
         _A.set(0, 1, 0);
         _Q.setFromAxisAngle(_A, ang);
@@ -128,20 +131,28 @@ export const controls = (function () {
         _R.multiply(_Q);
       }
       if (this._move.forward) {
-        cameraFrame.position.sub(_vel);
+        this._speed += timeIncr*2.5;
+        if (this._speed > this._maxSpeed) this._speed = this._maxSpeed;
+
+      } else if (this._move.backward) {
+        this._speed -= timeIncr;
+        if (this._speed < 0) this._speed = 0;
+      } else {
+        this._speed *=0.95;
       }
-      if (this._move.backward) {
-        cameraFrame.position.add(_vel);
-      }
+      _vel.multiplyScalar(this._speed);
+      cameraFrame.position.sub(_vel);
+      console.log(_vel);
       cameraFrame.quaternion.copy(_R);
       this._rotateShip();
-  
+
+
       if (this._move.fire) {
         this._player.Fire();
         this._move.fire = false;
       }
     }
-  
+
     _rotateShip() {
       const model = this._player._model;
       const alpha = Math.PI / 4;
@@ -150,7 +161,7 @@ export const controls = (function () {
       if (this._move.left) model.rotation.z += 0.03;
       if (this._move.right) model.rotation.z -= 0.03;
       if (!this._move.left && !this._move.right) model.rotation.z -= 0.1 * model.rotation.z;
-  
+
       if (model.rotation.x > alpha) model.rotation.x = alpha;
       if (model.rotation.x < -alpha) model.rotation.x = -alpha;
       if (this._move.up) model.rotation.x += 0.03;
@@ -158,10 +169,10 @@ export const controls = (function () {
       if (!this._move.up && !this._move.down) model.rotation.x -= 0.1 * model.rotation.x;
     }
 
-    _Hit(r){
+    _Hit(r) {
       return false;
     }
-  
+
   }
 
   return {

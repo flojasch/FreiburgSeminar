@@ -424,7 +424,7 @@ class BattleGame {
 
   _SetLight() {
     let light = new THREE.DirectionalLight(0x808080, 1.0);
-    light.position.set(100, 100, -100);
+    light.position.set(100, -100, 100);
     light.target.position.set(0, 0, 0);
     this._scene.add(light);
 
