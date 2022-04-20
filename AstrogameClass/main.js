@@ -20,59 +20,17 @@ import {
   quadtree
 } from './quadtree.js';
 import {
-  Water
-} from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/objects/Water.js';
+  sky
+} from './sky.js';
 
 
 
 let _APP = null;
 
-class WaterSurf {
-  constructor(params) {
-    this._camPos = params.camPos;
-    this._Init(params);
-  }
-  _Init(params) {
-    const waterGeometry = new THREE.PlaneBufferGeometry(10000, 10000, 100, 100);
-
-    this._water = new Water(
-      waterGeometry, {
-        textureWidth: 2048,
-        textureHeight: 2048,
-        waterNormals: new THREE.TextureLoader().load('images/waternormals.jpg', function (texture) {
-          texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        }),
-        alpha: 0.5,
-        sunDirection: new THREE.Vector3(1, 0, 0),
-        sunColor: 0xffffff,
-        waterColor: 0x001e0f,
-        distortionScale: 0.0,
-        fog: undefined
-      }
-    );
-    this._water.rotation.x = -Math.PI / 2;
-    this._water.position.y = 0.0;
-    params.scene.add(this._water);
-  }
-  Update(timeInSeconds) {
-    this._water.material.uniforms['time'].value += timeInSeconds;
-
-    this._water.position.x = this._camPos.x;
-    this._water.position.y = this._camPos.y - 100;
-    this._water.position.z = this._camPos.z;
-  }
-  get Position() {
-    return new THREE.Vector3();
-  }
-  get Radius() {
-    return -1;
-  }
-
-}
 
 class Terrain {
   constructor(params) {
-    this._terrainSize = 5000;
+    this._terrainSize = params.terrainSize;
     this.sides = [];
     this.MakeSides(params);
   }
@@ -365,32 +323,6 @@ class BlasterSystem {
 
 }
 
-class Planet {
-  constructor(params) {
-    this._position = params.position;
-    this._scene = params.scene;
-    this._radius = 1000;
-    const geometry = new THREE.SphereGeometry(this._radius, 60, 60);
-    const loader = new THREE.TextureLoader();
-    const texture = loader.load('./images/earth.jpg');
-    const material = new THREE.MeshPhongMaterial({
-      map: texture
-    });
-    const sphere = new THREE.Mesh(geometry, material);
-    sphere.position.copy(params.position);
-    this._scene.add(sphere);
-  }
-  Update(time) {
-
-  }
-  get Position() {
-    return this._position;
-  }
-  get Radius() {
-    return this._radius;
-  }
-}
-
 class BattleGame {
   constructor() {
     this._threejs = new THREE.WebGLRenderer({
@@ -440,25 +372,27 @@ class BattleGame {
   }
 
   _Initialize() {
+    this._terrainSize=5000;
     this._SetCamera();
     this._LoadBackground();
     this._SetLight();
     this._SetSound();
     this._CreatePlayer();
 
-    // this._entities['_earth'] = new Planet({
-    //   scene: this._scene,
-    //   position: new THREE.Vector3()
-    // });
 
     this._entities['_terrain'] = new Terrain({
       scene: this._scene,
       camPos: this._camera.position,
+      terrainSize: this._terrainSize,
     });
-    // this._entities['_water'] = new WaterSurf({
-    //   scene: this._scene,
-    //   camPos: this._camera.position,
-    // });
+    
+    this._entities['_sky'] = new sky.TerrainSky({
+      camPos: this._camera.position,
+      scene: this._scene,
+      terrainSize: this._terrainSize,
+    });
+
+
     this._entities['_explosionSystem'] = new ExplodeParticles(this);
     this._entities['_blaster'] = new Blaster(this);
     //this._entities['_menger']=new menger.Menger(this._camera);
@@ -470,7 +404,7 @@ class BattleGame {
     const near = 0.1;
     const far = 500000;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camera.position.set(0, 0, 20000);
+    this._camera.position.set(0, 5000, 20000);
     this._scene.add(this._camera);
   }
 
@@ -490,12 +424,12 @@ class BattleGame {
   }
 
   _SetLight() {
-    let light = new THREE.DirectionalLight(0xFFFFFF, 1.0);
-    light.position.set(100, 100, 100);
+    let light = new THREE.DirectionalLight(0x808080, 1.0);
+    light.position.set(-100, 100, -100);
     light.target.position.set(0, 0, 0);
     this._scene.add(light);
 
-    light = new THREE.AmbientLight(0xFFFFFF, 0.1);
+    light = new THREE.AmbientLight(0x808080, 0.5);
     this._scene.add(light);
 
 

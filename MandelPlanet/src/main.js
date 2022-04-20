@@ -15,51 +15,15 @@ import {
   quadtree
 } from './quadtree.js';
 
+import {
+  sky
+} from './sky.js';
+
 let _APP = null;
-const TERRAIN_SIZE = 10000;
-
-class WaterSurf {
-  constructor(params) {
-    this._camPos = params.camPos;
-    this._Init(params);
-  }
-  _Init(params) {
-    const waterSize = TERRAIN_SIZE*Math.sqrt(3)+5;
-     //const geometry = new THREE.PlaneBufferGeometry(waterSize, waterSize, 100, 100);
-    const geometry=new THREE.SphereBufferGeometry(waterSize,100,100);
-    this._water = new Water(
-      geometry, {
-        textureWidth: 2048,
-        textureHeight: 2048,
-        waterNormals: new THREE.TextureLoader().load('resources/waternormals.jpg', function (texture) {
-          texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        }),
-        alpha: 0.5,
-        sunDirection: new THREE.Vector3(-1, 1, -1),
-        sunColor: 0xffffff,
-        waterColor: 0x001e0f,
-        distortionScale: 0.0,
-        fog: undefined
-      }
-    );
-
-    this._water.rotation.x = -Math.PI/2 ;
-    this._water.position.set(0,0,0);
-   
-    params.scene.add(this._water);
-  }
-  Update(timeInSeconds) {
-    this._water.material.uniforms['time'].value += timeInSeconds;
-    // this._water.position.x = this._camPos.x;
-    // this._water.position.z = this._camPos.z;
-  
-  }
-
-}
 
 class Terrain {
   constructor(params) {
-    this._terrainSize = TERRAIN_SIZE;
+    this._terrainSize = params.terrainSize;
     this.sides = [];
     this.MakeSides(params);
   }
@@ -142,15 +106,18 @@ class ProceduralTerrain_Demo extends game.Game {
   }
 
   _OnInitialize() {
+    this.terrainSize=10000;
     this._entities['_terrain'] = new Terrain({
       scene: this._graphics.Scene,
       camPos: this._graphics._camera.position,
+      terrainSize: this.terrainSize,
     });
 
-    // this._entities['_water'] = new WaterSurf({
-    //   scene: this._graphics._scene,
-    //   camPos: this._graphics._camera.position,
-    // });
+    this._entities['_sky'] = new sky.TerrainSky({
+      camPos: this._graphics._camera.position,
+      scene: this._graphics.Scene,
+      terrainSize: this.terrainSize,
+    });
 
     this._entities['control'] = new controls.Controls({
       _camera: this._graphics._camera
@@ -162,12 +129,12 @@ class ProceduralTerrain_Demo extends game.Game {
     this._graphics.Scene.background = new THREE.Color(0x000000);
     const loader = new THREE.CubeTextureLoader();
     const texture = loader.load([
-        './resources/space-posx.jpg',
-        './resources/space-negx.jpg',
-        './resources/space-posy.jpg',
-        './resources/space-negy.jpg',
-        './resources/space-posz.jpg',
-        './resources/space-negz.jpg',
+      './resources/space-posx.jpg',
+      './resources/space-negx.jpg',
+      './resources/space-posy.jpg',
+      './resources/space-negy.jpg',
+      './resources/space-posz.jpg',
+      './resources/space-negz.jpg',
     ]);
     this._graphics._scene.background = texture;
   }

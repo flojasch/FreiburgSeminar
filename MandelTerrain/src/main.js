@@ -21,41 +21,6 @@ import {
 
 let _APP = null;
 
-class WaterSurf {
-  constructor(params) {
-    this._camPos = params.camPos;
-    this._Init(params);
-  }
-  _Init(params) {
-    const waterGeometry = new THREE.PlaneBufferGeometry(10000, 10000, 100, 100);
-
-    this._water = new Water(
-      waterGeometry, {
-        textureWidth: 2048,
-        textureHeight: 2048,
-        waterNormals: new THREE.TextureLoader().load('resources/waternormals.jpg', function (texture) {
-          texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        }),
-        alpha: 0.5,
-        sunDirection: new THREE.Vector3(1, 0, 0),
-        sunColor: 0xffffff,
-        waterColor: 0x001e0f,
-        distortionScale: 0.0,
-        fog: undefined
-      }
-    );
-    this._water.rotation.x = -Math.PI / 2;
-    this._water.position.y = 0.0;
-    params.scene.add(this._water);
-  }
-  Update(timeInSeconds) {
-    this._water.material.uniforms['time'].value += timeInSeconds;
-
-    this._water.position.x = this._camPos.x;
-    this._water.position.z = this._camPos.z;
-  }
-  
-}
 
 class Terrain {
   constructor(params) {
@@ -126,16 +91,12 @@ class ProceduralTerrain_Demo extends game.Game {
       guiParams: this._guiParams,
     });
 
-    this._entities['_water'] = new WaterSurf({
-      scene: this._graphics._scene,
-      camPos: this._graphics._camera.position,
+    this._entities['_sky'] = new sky.TerrainSky({
+      camera: this._graphics.Camera,
+      scene: this._graphics.Scene,
+      gui: this._gui,
+      guiParams: this._guiParams,
     });
-    // this._entities['_sky'] = new sky.TerrainSky({
-    //   camera: this._graphics.Camera,
-    //   scene: this._graphics.Scene,
-    //   gui: this._gui,
-    //   guiParams: this._guiParams,
-    // });
 
     this._entities['control'] = new controls.Controls({
       _camera: this._graphics._camera
