@@ -6,6 +6,7 @@ export const controls = (function () {
     constructor(player) {
       this._speed = 0;
       this._maxSpeed = 20;
+      this._minSpeed = -1;
       this._Init(player);
     }
 
@@ -136,13 +137,12 @@ export const controls = (function () {
 
       } else if (this._move.backward) {
         this._speed -= timeIncr;
-        if (this._speed < 0) this._speed = 0;
+        if (this._speed < this._minSpeed) this._speed = this._minSpeed;
       } else {
         this._speed *=0.95;
       }
       _vel.multiplyScalar(this._speed);
       cameraFrame.position.sub(_vel);
-      console.log(_vel);
       cameraFrame.quaternion.copy(_R);
       this._rotateShip();
 

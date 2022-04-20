@@ -18,8 +18,15 @@ import {
 import {
   menger
 } from './menger.js';
+import {
+  math
+} from './math.js';
 
 let _APP = null;
+const TERRAIN_SIZE = 5000;
+const HEIGHT = TERRAIN_SIZE / 100;
+const SCALE = Math.PI / (20 * HEIGHT);
+const RADIUS = TERRAIN_SIZE * Math.sqrt(3);
 
 function _CreateShip(params) {
   let file;
@@ -132,9 +139,9 @@ class PlayerEntity {
     this._model.position.set(0, -1.3, -3);
     this._camera = game._camera;
     this._camera.add(this._model);
-    this._radius = 1.0;
+    this._radius = 3.0;
     this._fireCooldown = 0.0;
-    this._health = 2;
+    this._health = 3;
     this._score = 0;
     this._ship = 'xwing';
     if (Math.random() > 0.5) this._ship = 'tie';
@@ -219,6 +226,15 @@ class PlayerEntity {
       this._Destroy();
     }
     this._gameGui.Update();
+
+    let dir = new THREE.Vector3();
+    dir.copy(this.Position);
+    dir.multiplyScalar(SCALE * RADIUS / dir.length());
+    let height = HEIGHT * math.weierstrass(dir.x, dir.y, dir.z);
+    console.log(this.Position.length()-RADIUS-height)
+    if (this.Position.length() < RADIUS + height) {
+      this._health -= 1;
+    }
   }
 
   _Hit(r) {
@@ -367,7 +383,7 @@ class BattleGame {
     this._SetLight();
     this._SetSound();
 
-    this._terrainSize=5000;
+    this._terrainSize = TERRAIN_SIZE;
     this._entities['_terrain'] = new objects.Terrain({
       scene: this._scene,
       camPos: this._camera.position,
@@ -378,8 +394,9 @@ class BattleGame {
       camPos: this._camera.position,
       scene: this._scene,
       terrainSize: this._terrainSize,
+      terrainLight: this.directionalLight,
     });
-
+    
     // this._entities['_earth'] = new objects.Planet({
     //   scene: this._scene,
     //   position: new THREE.Vector3()
@@ -400,9 +417,9 @@ class BattleGame {
     const near = 0.1;
     const far = 500000;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    const x = Math.random() * 100;
-    const y = Math.random() * 100 + 5000;
-    const z = Math.random() * 100 + 20000;
+    const x = 0; //+Math.random() * 100;
+    const y = 5000; //+Math.random() * 100;
+    const z = 20000; //+Math.random() * 100;
     this._camera.position.set(x, y, z);
     this._scene.add(this._camera);
   }
@@ -423,13 +440,13 @@ class BattleGame {
   }
 
   _SetLight() {
-    let light = new THREE.DirectionalLight(0x808080, 1.0);
-    light.position.set(100, -100, 100);
-    light.target.position.set(0, 0, 0);
-    this._scene.add(light);
+    this.directionalLight = new THREE.DirectionalLight(0x808080, 1.0);
+    this.directionalLight.position.set(100, -100, 100);
+    this.directionalLight.target.position.set(0, 0, 0);
+    this._scene.add(this.directionalLight);
 
-    light = new THREE.AmbientLight(0x808080, 0.5);
-    this._scene.add(light);
+    this.ambientlight = new THREE.AmbientLight(0x808080, 0.5);
+    this._scene.add(this.ambientlight);
   }
 
   _LoadBackground() {

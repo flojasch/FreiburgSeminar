@@ -77,6 +77,7 @@ export const sky = (function () {
 
         this._sky.material.uniforms['sunPosition'].value.copy(sunPosition);
         this._water.material.uniforms['sunDirection'].value.copy(sunPosition.normalize());
+        this._params.terrainLight.position.copy(sunPosition);
       };
 
       onShaderChange();
