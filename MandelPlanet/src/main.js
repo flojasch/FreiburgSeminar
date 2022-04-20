@@ -1,20 +1,14 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
-import {
-  Water
-} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/objects/Water.js';
 
 import {
   game
 } from './game.js';
-
 import {
   controls
 } from './controls.js';
-
 import {
   quadtree
 } from './quadtree.js';
-
 import {
   sky
 } from './sky.js';

@@ -1,8 +1,8 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118.1/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
 
 import {
   GLTFLoader
-} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
+} from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/loaders/GLTFLoader.js';
 
 import {
   controls
@@ -11,6 +11,10 @@ import {
 import {
   objects
 } from './gameobjects.js';
+import {
+  sky
+} from './sky.js';
+
 import {
   menger
 } from './menger.js';
@@ -363,10 +367,24 @@ class BattleGame {
     this._SetLight();
     this._SetSound();
 
-    this._entities['_earth'] = new objects.Planet({
+    this._terrainSize=5000;
+    this._entities['_terrain'] = new objects.Terrain({
       scene: this._scene,
-      position: new THREE.Vector3()
-    })
+      camPos: this._camera.position,
+      terrainSize: this._terrainSize,
+    });
+    
+    this._entities['_sky'] = new sky.TerrainSky({
+      camPos: this._camera.position,
+      scene: this._scene,
+      terrainSize: this._terrainSize,
+    });
+
+    // this._entities['_earth'] = new objects.Planet({
+    //   scene: this._scene,
+    //   position: new THREE.Vector3()
+    // })
+
     this._entities['_explosionSystem'] = new objects.ExplodeParticles(this);
     this._entities['_blaster'] = new objects.Blaster(this);
     //this._entities['_menger']=new menger.Menger(this._camera);
@@ -380,12 +398,12 @@ class BattleGame {
     const fov = 75;
     const aspect = this._width / this._height;
     const near = 0.1;
-    const far = 1000;
+    const far = 500000;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    const x = Math.random() * 100 + 500;
-    const y = Math.random() * 100 + 500;
-    const z = Math.random() * 100 + 500;
-    this._camera.position.set(0, 0, 500);
+    const x = Math.random() * 100;
+    const y = Math.random() * 100 + 5000;
+    const z = Math.random() * 100 + 20000;
+    this._camera.position.set(x, y, z);
     this._scene.add(this._camera);
   }
 
@@ -405,12 +423,12 @@ class BattleGame {
   }
 
   _SetLight() {
-    let light = new THREE.DirectionalLight(0xFFFFFF, 1.0);
+    let light = new THREE.DirectionalLight(0x808080, 1.0);
     light.position.set(100, 100, -100);
     light.target.position.set(0, 0, 0);
     this._scene.add(light);
 
-    light = new THREE.AmbientLight(0xFFFFFF, 0.1);
+    light = new THREE.AmbientLight(0x808080, 0.5);
     this._scene.add(light);
   }
 

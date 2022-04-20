@@ -25,7 +25,7 @@ export const sky = (function () {
         geometry, {
           textureWidth: 2048,
           textureHeight: 2048,
-          waterNormals: new THREE.TextureLoader().load('resources/waternormals.jpg', function (texture) {
+          waterNormals: new THREE.TextureLoader().load('static/resources/waternormals.jpg', function (texture) {
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
           }),
           alpha: 0.5,
@@ -97,6 +97,10 @@ export const sky = (function () {
 
       this._water.material.uniforms['time'].value += timeInSeconds;
 
+    }
+
+    _Hit(r) {
+      return false;
     }
   }
 

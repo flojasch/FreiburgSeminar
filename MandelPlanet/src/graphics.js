@@ -24,7 +24,7 @@ export const graphics = (function() {
       const fov = 60;
       const aspect = window.innerWidth/window.innerHeight;
       const near = 0.1;
-      const far = 50000.0;
+      const far = 100000.0;
       this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
       
       this._camera.position.set(0, 16000, 16000);

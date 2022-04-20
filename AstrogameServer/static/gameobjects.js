@@ -1,10 +1,13 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
 import {
   particles
 } from './particles.js';
 import {
   math
 } from './math.js';
+import {
+  quadtree
+} from './quadtree.js';
 
 export const objects = (function () {
 
@@ -58,7 +61,7 @@ export const objects = (function () {
     constructor(params) {
       this._coords = params.coords;
       this._scene = params.scene;
-      this._vel = new THREE.Vector3(0, 0, 70);
+      this._vel = new THREE.Vector3(0, 0, 200);
       const Q = new THREE.Quaternion;
       Q.set(this._coords.qx, this._coords.qy, this._coords.qz, this._coords.qw);
       this._vel.applyQuaternion(Q);
@@ -126,6 +129,89 @@ export const objects = (function () {
       r.sub(this._position);
       return (r.length() < this._radius);
     }
+  }
+
+  class _Terrain {
+    constructor(params) {
+      this._terrainSize = params.terrainSize;
+      this.sides = [];
+      this.MakeSides(params);
+    }
+  
+    MakeSides(params) {
+      const group = new THREE.Group();
+      params.scene.add(group);
+  
+      let m;
+      const rotations = [];
+      //top
+      m = new THREE.Matrix4();
+      m.makeRotationX(-Math.PI / 2);
+      rotations.push({
+        m,
+        tx: -1,
+        ty: 0,
+      });
+  
+      m = new THREE.Matrix4();
+      rotations.push({
+        m,
+        tx: 0,
+        ty: 0
+      });
+  
+      m = new THREE.Matrix4();
+      m.makeRotationX(Math.PI / 2);
+      rotations.push({
+        m,
+        tx: 1,
+        ty: 0
+      });
+      //backside
+      m = new THREE.Matrix4();
+      m.makeRotationY(-Math.PI);
+      rotations.push({
+        m,
+        tx: 0,
+        ty: -2
+      });
+  
+      m = new THREE.Matrix4();
+      m.makeRotationY(Math.PI / 2);
+      rotations.push({
+        m,
+        tx: 0,
+        ty: 1
+      });
+  
+      m = new THREE.Matrix4();
+      m.makeRotationY(-Math.PI / 2);
+      rotations.push({
+        m,
+        tx: 0,
+        ty: -1
+      });
+  
+      for (let rot of rotations)
+        this.sides.push(new quadtree.QuadTree({
+          terrainSize: this._terrainSize,
+          group: group,
+          camPos: params.camPos,
+          matrix: rot,
+        }));
+    }
+  
+    Update(timeInSeconds) {
+      for (let side of this.sides) {
+        side.Rebuild(side._root);
+        side.Update(side._root);
+      }
+    }
+    
+    _Hit(r) {
+      return (r.length() < Math.sqrt(3) * (this._terrainSize * 1.01));
+    }
+    
   }
 
   class _ExplodeParticles {
@@ -198,5 +284,6 @@ export const objects = (function () {
     BlasterSystem: _BlasterSystem,
     Planet: _Planet,
     ExplodeParticles: _ExplodeParticles,
+    Terrain: _Terrain
   };
 })();

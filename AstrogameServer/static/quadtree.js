@@ -1,18 +1,20 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118.1/build/three.module.js';
-import {math} from './math.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
+
+import {
+  math
+} from './math.js';
 
 export const quadtree = (function () {
 
-  const MIN_SIZE = 50;
-  const HEIGHT = 200;
-  const RESOLUTION=100;
+  const MIN_SIZE = 128;
+  const RESOLUTION = 64;
 
   class TerrainChunk {
     constructor(params) {
       this._params = params;
       this._matrix = params.matrix;
       this._position = params.chunkPos;
-      this._height = HEIGHT;
+      this._height = params.terrainSize / 100;
       this._res = RESOLUTION;
       this._size = params.size;
       this._terrainSize = params.terrainSize;
@@ -42,14 +44,14 @@ export const quadtree = (function () {
       function sat(x) {
         return Math.min(Math.max(x, 0.0), 1.0);
       }
-      let vc=new THREE.Color(0x2596BE);
+      let vc = new THREE.Color(0x0f4fb8);
       if (h > 0.0) {
-        const GRAY = new THREE.Color(0xFFFFFF);
-        let a = sat(h / HEIGHT);
-        vc = new THREE.Color(0x46b00c);
+        const GRAY = new THREE.Color(0xaaaaaa);
+        let a = sat(h / this._height);
+        vc = new THREE.Color(0x4b8f17);
         vc.lerp(GRAY, a);
       }
-      
+
       vertexColours.push(vc);
     }
 
@@ -60,11 +62,12 @@ export const quadtree = (function () {
         v.add(this._position);
         v.multiplyScalar(this._radius / v.length());
         v.applyMatrix4(this._matrix);
+        
         const scale=Math.PI / (20 * this._height);
         let vx=v.x*scale;
         let vy=v.y*scale;
         let vz=v.z*scale;
-        let height = this._height*math.weierstrass(vx, vy, vz,4);
+        let height = this._height*math.weierstrass(vx, vy, vz);
         v.multiplyScalar((this._radius + height) / this._radius);
         heights.push(height);
       }
@@ -83,7 +86,7 @@ export const quadtree = (function () {
       this._plane.geometry.verticesNeedUpdate = true;
       this._plane.geometry.computeVertexNormals();
     }
-  
+
   }
 
   class QuadTree {
@@ -91,9 +94,9 @@ export const quadtree = (function () {
       this._terrainSize = params.terrainSize;
       this._group = params.group;
       this._cam = params.camPos;
-      this._matrix=params.matrix.m;
-      this._tx=params.matrix.tx;
-      this._ty=params.matrix.ty;
+      this._matrix = params.matrix.m;
+      this._tx = params.matrix.tx;
+      this._ty = params.matrix.ty;
       this._root = {
         children: [],
         x: 0.0,
