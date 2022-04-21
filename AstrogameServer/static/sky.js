@@ -44,7 +44,6 @@ export const sky = (function () {
 
       this._group = new THREE.Group();
 
-
       params.scene.add(this._group);
 
       const skyParams = {

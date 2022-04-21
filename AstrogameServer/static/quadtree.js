@@ -14,11 +14,10 @@ export const quadtree = (function () {
       this._params = params;
       this._matrix = params.matrix;
       this._position = params.chunkPos;
-      this._height = params.terrainSize / 100;
       this._res = RESOLUTION;
       this._size = params.size;
       this._terrainSize = params.terrainSize;
-      this._radius = Math.sqrt(3) * this._terrainSize;
+      this._relHeight = params.relHeight;
       this._Init();
     }
     Destroy() {
@@ -47,7 +46,7 @@ export const quadtree = (function () {
       let vc = new THREE.Color(0x0f4fb8);
       if (h > 0.0) {
         const GRAY = new THREE.Color(0xaaaaaa);
-        let a = sat(h / this._height);
+        let a = sat(h);
         vc = new THREE.Color(0x4b8f17);
         vc.lerp(GRAY, a);
       }
@@ -60,15 +59,11 @@ export const quadtree = (function () {
       for (let k in this._plane.geometry.vertices) {
         const v = this._plane.geometry.vertices[k];
         v.add(this._position);
-        v.multiplyScalar(this._radius / v.length());
+        v.normalize();
         v.applyMatrix4(this._matrix);
-        
-        const scale=Math.PI / (20 * this._height);
-        let vx=v.x*scale;
-        let vy=v.y*scale;
-        let vz=v.z*scale;
-        let height = this._height*math.weierstrass(vx, vy, vz);
-        v.multiplyScalar((this._radius + height) / this._radius);
+
+        let height = math.weierstrass(v.x, v.y, v.z);
+        v.multiplyScalar(this._terrainSize * (Math.sqrt(3) + this._relHeight * height));
         heights.push(height);
       }
 
@@ -92,6 +87,7 @@ export const quadtree = (function () {
   class QuadTree {
     constructor(params) {
       this._terrainSize = params.terrainSize;
+      this._relHeight=params.relHeight;
       this._group = params.group;
       this._cam = params.camPos;
       this._matrix = params.matrix.m;
@@ -134,6 +130,7 @@ export const quadtree = (function () {
           chunkPos: new THREE.Vector3(node.x, node.y, this._terrainSize),
           size: 2 * node.size,
           terrainSize: this._terrainSize,
+          relHeight: this._relHeight,
           matrix: this._matrix,
           tx: this._tx,
           ty: this._ty,

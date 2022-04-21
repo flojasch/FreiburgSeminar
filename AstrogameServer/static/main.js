@@ -24,9 +24,7 @@ import {
 
 let _APP = null;
 const TERRAIN_SIZE = 5000;
-const HEIGHT = TERRAIN_SIZE / 100;
-const SCALE = Math.PI / (20 * HEIGHT);
-const RADIUS = TERRAIN_SIZE * Math.sqrt(3);
+const REL_HEIGHT = 0.01;
 
 function _CreateShip(params) {
   let file;
@@ -227,14 +225,17 @@ class PlayerEntity {
     }
     this._gameGui.Update();
 
+    if (this._TerrainCollision()) {
+      this._health -= 1;
+      this._game._entities['_explosionSystem'].Splode(this.Position);
+    }
+  }
+
+  _TerrainCollision() {
     let dir = new THREE.Vector3();
     dir.copy(this.Position);
-    dir.multiplyScalar(SCALE * RADIUS / dir.length());
-    let height = HEIGHT * math.weierstrass(dir.x, dir.y, dir.z);
-    console.log(this.Position.length()-RADIUS-height)
-    if (this.Position.length() < RADIUS + height) {
-      this._health -= 1;
-    }
+    dir.normalize();
+    return this.Position.length() < this._game._terrainSize * (Math.sqrt(3) + this._game._relHeight * math.weierstrass(dir.x, dir.y, dir.z))
   }
 
   _Hit(r) {
@@ -384,19 +385,21 @@ class BattleGame {
     this._SetSound();
 
     this._terrainSize = TERRAIN_SIZE;
+    this._relHeight = REL_HEIGHT;
     this._entities['_terrain'] = new objects.Terrain({
       scene: this._scene,
       camPos: this._camera.position,
       terrainSize: this._terrainSize,
+      relHeight: this._relHeight,
     });
-    
+
     this._entities['_sky'] = new sky.TerrainSky({
       camPos: this._camera.position,
       scene: this._scene,
       terrainSize: this._terrainSize,
       terrainLight: this.directionalLight,
     });
-    
+
     // this._entities['_earth'] = new objects.Planet({
     //   scene: this._scene,
     //   position: new THREE.Vector3()

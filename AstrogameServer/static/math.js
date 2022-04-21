@@ -1,4 +1,5 @@
 import perlin from 'https://cdn.jsdelivr.net/gh/mikechambers/es6-perlin-module/perlin.js';
+import 'https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.js';
 
 export const math = (function() {
   return {
@@ -38,8 +39,9 @@ export const math = (function() {
     },
 
     weierstrass: function(x, y,z) {
+      //const noise=new SimplexNoise(1);
       const maxPow=4;
-      let b = 1;
+      let b = 20;
       let amp = 1;
       let lambda = 2; 
       let base = 0.5; 

@@ -134,6 +134,7 @@ export const objects = (function () {
   class _Terrain {
     constructor(params) {
       this._terrainSize = params.terrainSize;
+      this._relHeight=params.relHeight;
       this.sides = [];
       this.MakeSides(params);
     }
@@ -195,6 +196,7 @@ export const objects = (function () {
       for (let rot of rotations)
         this.sides.push(new quadtree.QuadTree({
           terrainSize: this._terrainSize,
+          relHeight: this._relHeight,
           group: group,
           camPos: params.camPos,
           matrix: rot,
