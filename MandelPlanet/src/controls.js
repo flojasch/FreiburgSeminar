@@ -127,7 +127,7 @@ export const controls = (function () {
         camera.position.add(_vel);
       }
       camera.quaternion.copy(_R);
-     
+
     }
   
   }

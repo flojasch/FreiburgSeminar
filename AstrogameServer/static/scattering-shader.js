@@ -239,7 +239,7 @@ export const scattering_shader = (function() {
     float sunAmt = max(dot(rayDir, sunDir), 0.0);
     fogCol = mix(fogCol, YELLOW, pow(sunAmt, 16.0));
 
-    float be = 0.0005;
+    float be = 0.00005;
     float fogAmt = (1.0 - exp(-distToPoint * be));
 
     // Sun

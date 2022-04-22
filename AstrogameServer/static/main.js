@@ -5,6 +5,10 @@ import {
 } from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/loaders/GLTFLoader.js';
 
 import {
+  graphics
+} from './graphics.js';
+
+import {
   controls
 } from './controls.js';
 
@@ -318,22 +322,15 @@ class Ship {
 
 class BattleGame {
   constructor() {
+    this.graphics = new graphics.Graphics(this);
+    const x = 0; //+Math.random() * 100;
+    const y = 5000; //+Math.random() * 100;
+    const z = 11000; //+Math.random() * 100;
+    this.graphics.Initialize(x,y,z);
+    this._camera = this.graphics.Camera;
+    this._scene = this.graphics.Scene;
+    this.directionalLight = this.graphics.directionalLight;
 
-    this._threejs = new THREE.WebGLRenderer({
-      antialias: true,
-    });
-    this._width = window.innerWidth;
-    this._height = window.innerHeight;
-    this._threejs.setPixelRatio(window.devicePixelRatio);
-    this._threejs.setSize(this._width, this._height);
-
-    const target = document.getElementById('target');
-    target.appendChild(this._threejs.domElement);
-
-    window.addEventListener('resize', () => {
-      this._OnWindowResize();
-    }, false);
-    this._scene = new THREE.Scene();
     this._entities = {};
     this._playersCoords = {};
     this.socket = io();
@@ -357,7 +354,7 @@ class BattleGame {
         }
       }
       this._StepEntities(1 / 60);
-      this._threejs.render(this._scene, this._camera);
+      this.graphics.Render();
     });
     this.socket.on('new_blaster', (coords) => {
       if (coords.id != this.socket.id) {
@@ -379,9 +376,7 @@ class BattleGame {
   }
 
   _Initialize() {
-    this._SetCamera();
     this._LoadBackground();
-    this._SetLight();
     this._SetSound();
 
     this._terrainSize = TERRAIN_SIZE;
@@ -414,19 +409,6 @@ class BattleGame {
 
   }
 
-  _SetCamera() {
-    const fov = 75;
-    const aspect = this._width / this._height;
-    const near = 0.1;
-    const far = 500000;
-    this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    const x = 0; //+Math.random() * 100;
-    const y = 5000; //+Math.random() * 100;
-    const z = 20000; //+Math.random() * 100;
-    this._camera.position.set(x, y, z);
-    this._scene.add(this._camera);
-  }
-
   _SetSound() {
     const listener = new THREE.AudioListener();
     const audioLoader = new THREE.AudioLoader();
@@ -442,16 +424,6 @@ class BattleGame {
     });
   }
 
-  _SetLight() {
-    this.directionalLight = new THREE.DirectionalLight(0x808080, 1.0);
-    this.directionalLight.position.set(100, -100, 100);
-    this.directionalLight.target.position.set(0, 0, 0);
-    this._scene.add(this.directionalLight);
-
-    this.ambientlight = new THREE.AmbientLight(0x808080, 0.5);
-    this._scene.add(this.ambientlight);
-  }
-
   _LoadBackground() {
     const loader = new THREE.CubeTextureLoader();
     const texture = loader.load([
@@ -465,13 +437,6 @@ class BattleGame {
     this._scene.background = texture;
   }
 
-  _OnWindowResize() {
-    this._width = window.innerWidth;
-    this._height = window.innerHeight;
-    this._camera.aspect = this._width / this._height;
-    this._camera.updateProjectionMatrix();
-    this._threejs.setSize(this._width, this._height);
-  }
 }
 
 function _Main() {

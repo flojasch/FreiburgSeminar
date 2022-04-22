@@ -84,12 +84,12 @@ export const sky = (function () {
     }
 
     Update(timeInSeconds) {
-      if (this._params.camPos.length() < this._R + 2000 && !this.isSky) {
+      if (this._params.camPos.length() < this._R + 1000 && !this.isSky) {
         this._group.add(this._water);
         this._group.add(this._sky);
         this.isSky = true;
       }
-      if (this._params.camPos.length() >= this._R + 2000 && this.isSky) {
+      if (this._params.camPos.length() >= this._R + 1000 && this.isSky) {
         this._group.remove(this._water);
         this._group.remove(this._sky);
         this.isSky = false;

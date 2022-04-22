@@ -15,7 +15,7 @@ export const graphics = (function() {
     constructor(game) {
     }
 
-    Initialize() {
+    Initialize(x,y,z) {
       if (!WEBGL.isWebGL2Available()) {
         return false;
       }
@@ -44,10 +44,11 @@ export const graphics = (function() {
       const near = 0.1;
       const far = 500000.0;
       this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-      this._camera.position.set(0, 16000, 16000);
+      
+      this._camera.position.set(x, y, z);
 
       this._scene = new THREE.Scene();
-      //this._scene.background = new THREE.Color(0xaaaaaa);
+      this._scene.add(this._camera);
 
       const renderPass = new RenderPass(this._scene, this._camera);
       const fxaaPass = new ShaderPass(FXAAShader);
@@ -98,14 +99,13 @@ export const graphics = (function() {
     }
 
     _CreateLights() {
-      let light = new THREE.DirectionalLight(0x808080, 1, 100);
-      light.position.set(-1, 1, -1);
-      light.target.position.set(0, 0, 0);
-      light.castShadow = false;
-      this._scene.add(light);
-
-      light = new THREE.AmbientLight(0x808080, 0.5);
-      this._scene.add(light);
+      this.directionalLight = new THREE.DirectionalLight(0x808080, 1.0);
+      this.directionalLight.position.set(-100, -100, -100);
+      this.directionalLight.target.position.set(0, 0, 0);
+      this._scene.add(this.directionalLight);
+  
+      this.ambientlight = new THREE.AmbientLight(0x808080, 0.5);
+      this._scene.add(this.ambientlight);
     }
 
     _OnWindowResize() {
@@ -124,7 +124,7 @@ export const graphics = (function() {
       return this._camera;
     }
 
-    Render(timeInSeconds) {
+    Render() {
       this._threejs.setRenderTarget(this._target);
 
       this._threejs.clear();
@@ -144,8 +144,8 @@ export const graphics = (function() {
       this._depthPass.uniforms.cameraPosition.value = this._camera.position;
       this._depthPass.uniforms.cameraForward.value = forward;
       this._depthPass.uniforms.planetPosition.value = new THREE.Vector3(0, 0, 0);
-      this._depthPass.uniforms.planetRadius.value = 10000.0*Math.sqrt(3);
-      this._depthPass.uniforms.atmosphereRadius.value = 20000.0;
+      this._depthPass.uniforms.planetRadius.value = 5000.0*Math.sqrt(3);
+      this._depthPass.uniforms.atmosphereRadius.value = 10000.0;
       this._depthPass.uniformsNeedUpdate = true;
 
       this._threejs.render( this._postScene, this._postCamera );
