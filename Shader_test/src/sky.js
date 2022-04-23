@@ -25,7 +25,7 @@ export const sky = (function () {
         geometry, {
           textureWidth: 2048,
           textureHeight: 2048,
-          waterNormals: new THREE.TextureLoader().load('static/resources/waternormals.jpg', function (texture) {
+          waterNormals: new THREE.TextureLoader().load('resources/waternormals.jpg', function (texture) {
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
           }),
           alpha: 0.5,
@@ -43,6 +43,7 @@ export const sky = (function () {
       this._sky.scale.setScalar(50000);
 
       this._group = new THREE.Group();
+
 
       params.scene.add(this._group);
 
@@ -76,7 +77,6 @@ export const sky = (function () {
 
         this._sky.material.uniforms['sunPosition'].value.copy(sunPosition);
         this._water.material.uniforms['sunDirection'].value.copy(sunPosition.normalize());
-        this._params.terrainLight.position.copy(sunPosition);
       };
 
       onShaderChange();
@@ -84,12 +84,12 @@ export const sky = (function () {
     }
 
     Update(timeInSeconds) {
-      if (this._params.camPos.length() < this._R + 500 && !this.isSky) {
+      if (this._params.camPos.length() < this._R + 1000 && !this.isSky) {
         this._group.add(this._water);
         this._group.add(this._sky);
         this.isSky = true;
       }
-      if (this._params.camPos.length() >= this._R + 500 && this.isSky) {
+      if (this._params.camPos.length() >= this._R + 1000 && this.isSky) {
         this._group.remove(this._water);
         this._group.remove(this._sky);
         this.isSky = false;
@@ -97,10 +97,6 @@ export const sky = (function () {
 
       this._water.material.uniforms['time'].value += timeInSeconds;
 
-    }
-
-    _Hit(r) {
-      return false;
     }
   }
 

@@ -1,8 +1,8 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
 import {
   GLTFLoader
-} from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/loaders/GLTFLoader.js';
+} from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/loaders/GLTFLoader.js';
 
 import {
   math
@@ -380,31 +380,31 @@ class BattleGame {
     this._CreatePlayer();
 
 
-    this._entities['_terrain'] = new Terrain({
-      scene: this._scene,
-      camPos: this._camera.position,
-      terrainSize: this._terrainSize,
-    });
+    // this._entities['_terrain'] = new Terrain({
+    //   scene: this._scene,
+    //   camPos: this._camera.position,
+    //   terrainSize: this._terrainSize,
+    // });
     
-    this._entities['_sky'] = new sky.TerrainSky({
-      camPos: this._camera.position,
-      scene: this._scene,
-      terrainSize: this._terrainSize,
-    });
+    // this._entities['_sky'] = new sky.TerrainSky({
+    //   camPos: this._camera.position,
+    //   scene: this._scene,
+    //   terrainSize: this._terrainSize,
+    // });
 
 
     this._entities['_explosionSystem'] = new ExplodeParticles(this);
     this._entities['_blaster'] = new Blaster(this);
-    //this._entities['_menger']=new menger.Menger(this._camera);
+    this._entities['_menger']=new menger.Menger(this._camera);
   }
 
   _SetCamera() {
     const fov = 75;
     const aspect = this._width / this._height;
     const near = 0.1;
-    const far = 500000;
+    const far = 10000;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camera.position.set(0, 5000, 20000);
+    this._camera.position.set(-200, -300, 200);
     this._scene.add(this._camera);
   }
 
