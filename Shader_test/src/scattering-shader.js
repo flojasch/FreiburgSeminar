@@ -373,6 +373,7 @@ export const scattering_shader = (function() {
     float z = texture2D(tDepth, vUv).x;
     vec3 posWS = _ScreenToWorld(vec3(vUv, z));
     float dist = length(posWS - cameraPosition);
+    
     float height = max(0.0, length(cameraPosition) - planetRadius);
     vec3 cameraDirection = normalize(posWS - cameraPosition);
 

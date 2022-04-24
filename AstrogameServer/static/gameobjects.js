@@ -111,10 +111,10 @@ export const objects = (function () {
     constructor(params) {
       this._position = params.position;
       this._scene = params.scene;
-      this._radius = 200;
+      this._radius = 30000;
       const geometry = new THREE.SphereGeometry(this._radius, 60, 60);
       const loader = new THREE.TextureLoader();
-      const texture = loader.load('static/images/earth.jpg');
+      const texture = loader.load('static/images/sun.jpg');
       const material = new THREE.MeshPhongMaterial({
         map: texture
       });

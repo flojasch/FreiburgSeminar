@@ -6,9 +6,9 @@ import {
 import {
   controls
 } from './controls.js';
-// import {
-//   quadtree
-// } from './quadtree.js';
+import {
+  quadtree
+} from './quadtree.js';
 import {
   sky
 } from './sky.js';
@@ -100,22 +100,19 @@ class ProceduralTerrain_Demo extends game.Game {
   }
 
   _OnInitialize() {
-    // this.terrainSize=10000;
-    // this._entities['_terrain'] = new Terrain({
-    //   scene: this._graphics.Scene,
-    //   camPos: this._graphics._camera.position,
-    //   terrainSize: this.terrainSize,
-    // });
+    this.terrainSize=200;
+    this._entities['_terrain'] = new Terrain({
+      scene: this._graphics.Scene,
+      camPos: this._graphics._camera.position,
+      terrainSize: this.terrainSize,
+    });
 
     // this._entities['_sky'] = new sky.TerrainSky({
     //   camPos: this._graphics._camera.position,
     //   scene: this._graphics.Scene,
     //   terrainSize: this.terrainSize,
     // });
-    // this._entities['_menger'] = new menger.Menger({
-    //   camera: this._graphics._camera,
-    //   scene: this._graphics.Scene
-    // });
+   
     this._entities['control'] = new controls.Controls({
       _camera: this._graphics._camera
     });

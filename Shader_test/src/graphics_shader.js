@@ -44,7 +44,7 @@ export const graphics_shader = (function() {
       const near = 0.1;
       const far = 500000.0;
       this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-      this._camera.position.set(0, 16000, 16000);
+      this._camera.position.set(0, 0, 1000);
 
       this._scene = new THREE.Scene();
       //this._scene.background = new THREE.Color(0xaaaaaa);
@@ -144,8 +144,8 @@ export const graphics_shader = (function() {
       this._depthPass.uniforms.cameraPosition.value = this._camera.position;
       this._depthPass.uniforms.cameraForward.value = forward;
       this._depthPass.uniforms.planetPosition.value = new THREE.Vector3(0, 0, 0);
-      this._depthPass.uniforms.planetRadius.value = 10000.0*Math.sqrt(3);
-      this._depthPass.uniforms.atmosphereRadius.value = 20000.0;
+      this._depthPass.uniforms.planetRadius.value = 200;
+      this._depthPass.uniforms.atmosphereRadius.value = 250;
       this._depthPass.uniformsNeedUpdate = true;
 
       this._threejs.render( this._postScene, this._postCamera );

@@ -31,10 +31,11 @@ export const menger_shader = (function() {
   uniform vec3 planetPosition;
   uniform float planetRadius;
   uniform float atmosphereRadius;
+  uniform vec3 lightDir;
 
   //Definitionen für Mengerschwamm
   #define MAX_STEPS 100
-  #define MAX_DIST 2000.
+  #define MAX_DIST 20000.
   #define SURF_DIST .01
   #define MAX_ITER 7
 
@@ -98,7 +99,7 @@ export const menger_shader = (function() {
   }
   
   float GetDist(vec3 p){
-      float d=sdMenger(p-vec3(-500,0,0));
+      float d=sdMenger(p-vec3(0.,10000.,3000.));
       return d;
   }
   
@@ -347,7 +348,7 @@ vec3 _ApplyGroundFog(
   float sunAmt = max(dot(rayDir, sunDir), 0.0);
   fogCol = mix(fogCol, YELLOW, pow(sunAmt, 16.0));
 
-  float be = 0.0025;
+  float be = 0.0005;
   float fogAmt = (1.0 - exp(-distToPoint * be));
 
   // Sun
@@ -482,7 +483,6 @@ vec3 _ApplyFog(
     vec3 posWS = _ScreenToWorld(vec3(vUv, z));
     float dist = length(posWS - cameraPosition);
     vec3 diffuse = texture2D(tDiffuse, vUv).xyz;
-    vec3 lightDir = normalize(vec3(0., 0., -1.));
     vec3 rd = normalize(posWS-cameraPosition);
     
     //Berechnung des Mengerschwamms

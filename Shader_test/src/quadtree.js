@@ -3,8 +3,8 @@ import {math} from './math.js';
 
 export const quadtree = (function () {
 
-  const MIN_SIZE = 50;
-  const HEIGHT = 200;
+  const MIN_SIZE = 10;
+  const HEIGHT = 5;
   const RESOLUTION=100;
 
   class TerrainChunk {

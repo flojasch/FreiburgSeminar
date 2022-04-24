@@ -13,6 +13,7 @@ export const graphics = (function() {
 
   class _Graphics {
     constructor(game) {
+
     }
 
     Initialize() {
@@ -44,7 +45,7 @@ export const graphics = (function() {
       const near = 0.1;
       const far = 10000.0;
       this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-      this._camera.position.set(0, 0, 500);
+      this._camera.position.set(0, 0, 1000);
 
       this._scene = new THREE.Scene();
 
@@ -82,6 +83,9 @@ export const graphics = (function() {
           inverseProjection: { value: null },
           inverseView: { value: null },
           iTime: { value: 0.0},
+          planetPosition: { value: null },
+          planetRadius: { value: null },
+          atmosphereRadius: { value: null },
         }
       } );
       var postPlane = new THREE.PlaneBufferGeometry( 2, 2 );
@@ -142,7 +146,10 @@ export const graphics = (function() {
       this._depthPass.uniforms.cameraForward.value = forward;
       this._depthPass.uniforms.iTime.value +=timeInSeconds;
       this._depthPass.uniformsNeedUpdate = true;
-
+      this._depthPass.uniforms.planetPosition.value = new THREE.Vector3(0, 0, 0);
+      this._depthPass.uniforms.planetRadius.value = 200.0;
+      this._depthPass.uniforms.atmosphereRadius.value = 250.0;
+      
       this._threejs.render( this._postScene, this._postCamera );
 
     }

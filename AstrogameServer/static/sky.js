@@ -15,6 +15,7 @@ export const sky = (function () {
       this.isSky = false;
       this._params = params;
       this._R = params.terrainSize * Math.sqrt(3);
+      this.sunPos=params.lightPos;
       this._Init(params);
     }
 
@@ -73,10 +74,10 @@ export const sky = (function () {
         sunPosition.x = Math.cos(phi);
         sunPosition.y = Math.sin(phi) * Math.sin(theta);
         sunPosition.z = Math.sin(phi) * Math.cos(theta);
-
+        console.log(sunPosition);
         this._sky.material.uniforms['sunPosition'].value.copy(sunPosition);
         this._water.material.uniforms['sunDirection'].value.copy(sunPosition.normalize());
-        this._params.terrainLight.position.copy(sunPosition);
+        //this._params.terrainLight.position.copy(sunPosition);
       };
 
       onShaderChange();

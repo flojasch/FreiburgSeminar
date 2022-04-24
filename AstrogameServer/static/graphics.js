@@ -6,8 +6,7 @@ import {ShaderPass} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/js
 import {FXAAShader} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/shaders/FXAAShader.js';
 import {EffectComposer} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/postprocessing/EffectComposer.js';
 
-import {scattering_shader} from './scattering-shader.js';
-
+import {menger_shader} from './menger_shader.js';
 
 export const graphics = (function() {
 
@@ -72,8 +71,8 @@ export const graphics = (function() {
 
       this._postCamera = new THREE.OrthographicCamera( - 1, 1, 1, - 1, 0, 1 );
       this._depthPass = new THREE.ShaderMaterial( {
-        vertexShader: scattering_shader.VS,
-        fragmentShader: scattering_shader.PS,
+        vertexShader: menger_shader.VS,
+        fragmentShader: menger_shader.PS,
         uniforms: {
           cameraNear: { value: this.Camera.near },
           cameraFar: { value: this.Camera.far },
@@ -86,6 +85,8 @@ export const graphics = (function() {
           planetPosition: { value: null },
           planetRadius: { value: null },
           atmosphereRadius: { value: null },
+          iTime: { value: 0.0},
+          lightDir: { value: null},
         }
       } );
       var postPlane = new THREE.PlaneBufferGeometry( 2, 2 );
@@ -99,8 +100,10 @@ export const graphics = (function() {
     }
 
     _CreateLights() {
+      this.lightDir=new THREE.Vector3(0,0.6,-0.8);
+      this.lightDir.normalize();
       this.directionalLight = new THREE.DirectionalLight(0x808080, 1.0);
-      this.directionalLight.position.set(-100, -100, -100);
+      this.directionalLight.position.set(-this.lightDir.x,-this.lightDir.y,-this.lightDir.z);
       this.directionalLight.target.position.set(0, 0, 0);
       this._scene.add(this.directionalLight);
   
@@ -124,7 +127,7 @@ export const graphics = (function() {
       return this._camera;
     }
 
-    Render() {
+    Render(timeInSeconds) {
       this._threejs.setRenderTarget(this._target);
 
       this._threejs.clear();
@@ -147,6 +150,8 @@ export const graphics = (function() {
       this._depthPass.uniforms.planetRadius.value = 5000.0*Math.sqrt(3);
       this._depthPass.uniforms.atmosphereRadius.value = 10000.0;
       this._depthPass.uniformsNeedUpdate = true;
+      this._depthPass.uniforms.iTime.value +=timeInSeconds;
+      this._depthPass.uniforms.lightDir.value=this.lightDir;
 
       this._threejs.render( this._postScene, this._postCamera );
 

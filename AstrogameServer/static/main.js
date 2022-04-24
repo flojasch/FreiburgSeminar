@@ -18,10 +18,6 @@ import {
 import {
   sky
 } from './sky.js';
-
-import {
-  menger
-} from './menger.js';
 import {
   math
 } from './math.js';
@@ -354,7 +350,7 @@ class BattleGame {
         }
       }
       this._StepEntities(1 / 60);
-      this.graphics.Render();
+      this.graphics.Render(1/60);
     });
     this.socket.on('new_blaster', (coords) => {
       if (coords.id != this.socket.id) {
@@ -392,17 +388,12 @@ class BattleGame {
       camPos: this._camera.position,
       scene: this._scene,
       terrainSize: this._terrainSize,
-      terrainLight: this.directionalLight,
+      lightPos: this.directionalLight.position,
     });
-
-    // this._entities['_earth'] = new objects.Planet({
-    //   scene: this._scene,
-    //   position: new THREE.Vector3()
-    // })
+   
 
     this._entities['_explosionSystem'] = new objects.ExplodeParticles(this);
     this._entities['_blaster'] = new objects.Blaster(this);
-    //this._entities['_menger']=new menger.Menger(this._camera);
     this._entities['_otherPlayers'] = new OtherPlayers(this);
     this._entities['player'] = new PlayerEntity(this);
     this._entities['controls'] = new controls.Controls(this._entities['player']);
