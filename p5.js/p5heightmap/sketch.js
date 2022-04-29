@@ -26,7 +26,7 @@ function draw() {
   model(terrain);
 }
 
-function meshFromHeightmap(image, detailX = 700, detailY = 700) {
+function meshFromHeightmap(image, detailX = 200, detailY = 200) {
   return new p5.Geometry(
     detailX,
     detailY,

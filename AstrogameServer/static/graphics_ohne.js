@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
 
-export const graphics = (function () {
+export const graphics_ohne = (function () {
 
   class _Graphics {
     constructor(game) {}
