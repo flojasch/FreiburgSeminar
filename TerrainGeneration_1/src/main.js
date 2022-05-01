@@ -8,25 +8,18 @@ import {
 import {
   game
 } from './game.js';
-
 import {
   controls
 } from './controls.js';
 
 import {
-  quadtree
-} from './quadtree.js';
-
-
+  terrain
+} from './terrain.js';
 
 let _APP = null;
 
-const TERRAIN_SIZE = 10000;
-
-
 class Terrain {
   constructor(params) {
-    this._terrainSize = TERRAIN_SIZE;
     this._camera = params.camera;
     this._camSec = new THREE.Vector3();
     this._InitTerrain(params);
@@ -35,10 +28,7 @@ class Terrain {
   _InitTerrain(params) {
     params.guiParams.terrain = {
       wireframe: false,
-    };
-    params.guiParams.mandel = {
-      height: 100,
-      power: 0.5,
+      height: 2000,
     };
 
     this._group = new THREE.Group()
@@ -47,33 +37,22 @@ class Terrain {
 
     const terrainRollup = params.gui.addFolder('Terrain');
     terrainRollup.add(params.guiParams.terrain, "wireframe").onChange(() => {
-      for (let k in this._chunks) {
-        this._chunks[k].chunk._plane.material.wireframe = params.guiParams.terrain.wireframe;
-      }
+      this.terrainChunk._plane.material.wireframe = params.guiParams.terrain.wireframe;
     });
-    const mandelRollup = params.gui.addFolder('Mandelbrot');
-    mandelRollup.add(params.guiParams.mandel, "height", 0.0, 300.0).onChange(() => {
-      for (let k in this._chunks) {
-        this._chunks[k].chunk._height = params.guiParams.mandel.height;
-        this._chunks[k].chunk.Rebuild();
-      }
-    });
-    mandelRollup.add(params.guiParams.mandel, "power", 0.0, 2.0).onChange(() => {
-      for (let k in this._chunks) {
-        this._chunks[k].chunk._power = params.guiParams.mandel.power;
-        this._chunks[k].chunk.Rebuild();
-      }
-    });
+    terrainRollup.add(params.guiParams.terrain, "height", 0.1, 5000).onChange(
+      () => {
+        this.terrainChunk._height = params.guiParams.terrain.height;
+        this.terrainChunk.loadImage();
+      });
 
-    this.quadTree = new quadtree.QuadTree(this);
-    
+    this.terrainChunk = new terrain.TerrainChunk({
+      group: this._group,
+    });
   }
 
   Update(timeInSeconds) {
-    this.quadTree.Rebuild(this.quadTree._root);
-    this.quadTree.Update(this.quadTree._root);
-  }
 
+  }
 }
 
 class ProceduralTerrain_Demo extends game.Game {
@@ -83,7 +62,7 @@ class ProceduralTerrain_Demo extends game.Game {
 
   _OnInitialize() {
     this._CreateGUI();
-    
+
     this._entities['_terrain'] = new Terrain({
       scene: this._graphics.Scene,
       camera: this._graphics._camera,

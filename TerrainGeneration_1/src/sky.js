@@ -1,7 +1,7 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117/build/three.module.js';
 
-import {Sky} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/objects/Sky.js';
-import {Water} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/objects/Water.js';
+import {Sky} from 'https://cdn.jsdelivr.net/npm/three@0.117/examples/jsm/objects/Sky.js';
+import {Water} from 'https://cdn.jsdelivr.net/npm/three@0.117/examples/jsm/objects/Water.js';
 
 
 export const sky = (function() {
@@ -13,7 +13,7 @@ export const sky = (function() {
     }
 
     _Init(params) {
-      const waterGeometry = new THREE.PlaneBufferGeometry(10000, 10000, 100, 100);
+      const waterGeometry = new THREE.PlaneBufferGeometry(100000, 100000, 100, 100);
 
       this._water = new Water(
         waterGeometry,
@@ -34,10 +34,10 @@ export const sky = (function() {
         }
       );
       this._water.rotation.x = - Math.PI / 2;
-      this._water.position.y = 0.1;
+      this._water.position.y = 5;
 
       this._sky = new Sky();
-      this._sky.scale.setScalar(10000);
+      this._sky.scale.setScalar(100000);
 
       this._group = new THREE.Group();
       this._group.add(this._water);
@@ -54,8 +54,8 @@ export const sky = (function() {
       };
 
       params.guiParams.sun = {
-        inclination: 0.31,
-        azimuth: 0.25,
+        inclination: 0.5,
+        azimuth: 0.2,
       };
 
       const onShaderChange = () => {
