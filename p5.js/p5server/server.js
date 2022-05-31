@@ -61,6 +61,14 @@ io.on('connection', (socket) => {
     if (data.backward) {
       if (player.speed > -2) player.speed -= 0.1;
     }
+    if (data.projectile) {
+      let projectile = {
+        pos: player.pos,
+        Z: player.Z,
+        id: socket.id,
+      };
+      io.sockets.emit('projectile', projectile);
+    }
   });
 
   socket.on('disconnect', () => {

@@ -153,7 +153,7 @@ document.addEventListener('keyup', function (event) {
 socket.on('projectile', (p)=> {
   let projectile = new Projectile(p.x, p.y, p.z, p.vx, p.vy, p.vz, p.id);
   projectiles.push(projectile);
-  if (p.id == socked.id) {
+  if (p.id == socket.id) {
     movement.projectile = false;
   }
 });

@@ -26,9 +26,9 @@ io.on('connection', function (socket) {
     let xpos = r * Math.sin(angle);
     let ypos = r * Math.cos(angle);
     players[socket.id] = {
-      x: xpos,
+      x: 1500,//xpos,
       y: 0,
-      z: ypos,
+      z: 1500,//ypos,
       X: {
         x: 1,
         y: 0,
