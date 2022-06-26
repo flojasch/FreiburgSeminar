@@ -23,7 +23,7 @@ let alphax = 0,
 let start = false;
 const amax = Math.PI / 4;
 const da = 0.1;
-let yoffset, zoffset;
+
 
 
 function setup() {
@@ -32,8 +32,7 @@ function setup() {
   metall = loadImage('static/images/metall.jpg');
   lasersound = loadSound('static/laser.wav');
   createCanvas(windowWidth - 20, windowHeight - 20, WEBGL);
-  yoffset=0;
-  zoffset=-width/10;
+
   socket.emit('new_player');
   text = createP().position(20, 20);
   text.style('font-size', '200%');
@@ -115,7 +114,7 @@ document.addEventListener('keyup', (event) => {
       movement.backward = false;
       break;
     case 32: //space
-      movement.projectile = true;
+      movement.projectile = false;
       break;
 
   }
@@ -132,19 +131,24 @@ socket.on('state', (players) => {
     text.html('Score: ' + score + '   Lives: ' + lives);
     socket.emit('movement', movement);
     background(0);
-    showPlayer();
-    rotateModel();
-    const player = players[socket.id] || {};
-    const pos = player.pos || {};
-    const Z = player.Z || {};
-    const Y = player.Y || {};
-    camera(Z.x, Z.y, Z.z, 0, 0, 0, Y.x, Y.y, Y.z);
-    translate(pos.x, pos.y, pos.z);
+    let player = players[socket.id] || {};
+    let pos = player.pos || {};
+    Z = player.Z || {};
+    Y = player.Y || {};
+    
+    let cpos = new Vec(pos.x, pos.y, pos.z);
+    cpos.trans(Z, 140);
+    cpos.trans(Y, -30);
+    let clook = new Vec(pos.x, pos.y, pos.z);
+    clook.trans(Y, -30);
+    camera(cpos.x, cpos.y, cpos.z, clook.x, clook.y, clook.z, Y.x, Y.y, Y.z);
+
     for (let planet of planets) {
       planet.show();
     }
     updateProjectiles();
-    showOthers(players);
+    showPlayers(players);
+    rotateModel();
   }
 });
 
@@ -156,25 +160,27 @@ function updateProjectiles() {
   }
 }
 
-function showOthers(players) {
+function showPlayers(players) {
   for (let id in players) {
-    if (id != socket.id) {
-      const pos = players[id].pos;
-      const Z = players[id].Z;
       push();
-      transform(pos, Z);
+      transform(players[id].pos, players[id].Z);
       scale(0.5);
       texture(metall);
+      if (id == socket.id) {
+        rotateX(alphax);
+        rotateY(alphay);
+      }
       model(xwing);
       pop();
-    }
   }
 }
 
 function transform(pos, Z) {
-  translate(-pos.x, -pos.y, -pos.z);
+  translate(pos.x, pos.y, pos.z);
   let r = sqrt(Z.x * Z.x + Z.z * Z.z);
-  let xAngle = asin(Z.y);
+  let R = sqrt(Z.x * Z.x + Z.y * Z.y + Z.z * Z.z);
+  let xAngle = acos(r / R);
+  if (Z.y < 0) xAngle *= -1;
   let yAngle = acos(Z.z / r);
   if (Z.x < 0) yAngle *= -1;
   rotateY(yAngle);
@@ -193,19 +199,6 @@ function rotateModel() {
     if (alphax < amax) alphax += da;
   if (!movement.up && !movement.down) alphax *= 0.85;
   if (!movement.left && !movement.right) alphay *= 0.85;
-}
-
-function showPlayer() {
-  camera(0, 0, 1, 0, 0, 0, 0, 1, 0);
-  push();
-  translate(0, yoffset, zoffset);
-  scale(0.2);
-  texture(metall);
-  rotateX(PI / 2);
-  rotateX(alphax);
-  rotateY(alphay);
-  model(xwing);
-  pop();
 }
 
 class Planet {
@@ -228,8 +221,8 @@ class Planet {
 
 class Projectile {
   constructor(proj) {
-    this.pos = proj.pos;
-    this.speed = 20;
+    this.pos = new Vec(proj.pos.x,proj.pos.y,proj.pos.z);
+    this.speed = -20;
     this.Z = proj.Z;
     this.id = proj.id;
   }
@@ -242,8 +235,31 @@ class Projectile {
     pop();
   }
   update() {
-    this.pos.x += this.speed * this.Z.x;
-    this.pos.y += this.speed * this.Z.y;
-    this.pos.z += this.speed * this.Z.z;
+    this.pos.trans(this.Z, this.speed);
+  }
+}
+
+class Vec {
+  constructor(x, y, z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+  //rotation um einen kleinen Winkel da
+  rot(n, da) {
+    let dx = (n.y * this.z - n.z * this.y) * da;
+    let dy = (n.z * this.x - n.x * this.z) * da;
+    let dz = (n.x * this.y - n.y * this.x) * da;
+    this.x += dx;
+    this.y += dy;
+    this.z += dz;
+  }
+  trans(v, t) {
+    this.x += v.x * t;
+    this.y += v.y * t;
+    this.z += v.z * t;
+  }
+  copy() {
+    return new Vec(this.x, this.y, this.z);
   }
 }

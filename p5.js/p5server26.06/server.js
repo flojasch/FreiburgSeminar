@@ -100,6 +100,14 @@ class Vec {
     this.y += dy;
     this.z += dz;
   }
+  trans(v, t) {
+    this.x += v.x*t;
+    this.y += v.y*t;
+    this.z += v.z*t;
+  }
+  copy(){
+    return new Vec(this.x,this.y,this.z);
+  }
 }
 
 class Player {
@@ -111,9 +119,7 @@ class Player {
     this.speed=0;
   }
   update(){
-    this.pos.x += this.Z.x*this.speed;
-    this.pos.y += this.Z.y*this.speed;
-    this.pos.z += this.Z.z*this.speed;
+    this.pos.trans(this.Z,-this.speed);
     this.speed *=0.98;
   }
 }
