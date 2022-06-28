@@ -72,12 +72,13 @@ io.on('connection', (socket) => {
   });
   socket.on('playerdied', () => {
     console.log('user ' + socket.id + ' disconnected');
-    io.sockets.emit('player_deleted', socket.id);
     delete players[socket.id];
   });
+  socket.on('score',(id)=>{
+    io.sockets.emit('score',id);
+  })
   socket.on('disconnect', () => {
     console.log('user ' + socket.id + ' disconnected');
-    io.sockets.emit('player_deleted', socket.id);
     delete players[socket.id];
   });
 });

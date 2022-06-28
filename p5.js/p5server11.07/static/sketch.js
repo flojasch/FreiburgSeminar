@@ -127,6 +127,9 @@ socket.on('projectile', (proj) => {
   projectiles.push(projectile);
   movement.projectile = false;
 });
+socket.on('score', (id) => {
+  if (id == socket.id) score += 100;
+})
 
 socket.on('state', (players) => {
   if (start) {
@@ -157,7 +160,6 @@ function showPlanets() {
     planets[i].show();
     if (planets[i].isHit()) {
       planets.splice(i, 1);
-      bombsound.play();
     }
   }
 }
@@ -174,7 +176,7 @@ function showPlayers(players) {
   rotateModel();
   for (let id in players) {
     push();
-    transform(players[id].pos, players[id].Z);
+    transform(players[id].pos, players[id].Z, players[id].Y);
     scale(0.5);
     texture(metall);
     if (id == socket.id) {
@@ -182,6 +184,10 @@ function showPlayers(players) {
         lives--;
         if (lives <= 0) {
           socket.emit('playerdied');
+          start = false;
+          text.style('font-size', '600%');
+          text.style('color', 'bb0000');
+          text.html('Game Over');
         }
       }
       rotateX(alphax);
@@ -192,27 +198,38 @@ function showPlayers(players) {
   }
 }
 
-function isHit(obj) {
+function isHit(player) {
   for (let proj of projectiles) {
     let pos = new Vec(player.pos.x, player.pos.y, player.pos.z);
     if (pos.dist(proj.pos) < 10) {
       bombsound.play();
+      socket.emit('score', proj.id);
       return true;
     }
   }
   return false;
 }
 
-function transform(pos, Z) {
+function transform(pos, Z, Y) {
   translate(pos.x, pos.y, pos.z);
-  let r = sqrt(Z.x * Z.x + Z.z * Z.z);
-  let R = sqrt(Z.x * Z.x + Z.y * Z.y + Z.z * Z.z);
+  let rr = (Z.x ** 2 + Z.z ** 2);
+  let r = sqrt(rr);
+  let Ry=sqrt(Y.x**2+Y.y**2+Y.z**2);
+  let rh = r*sqrt(Z.y**2 + rr);
+  let sp = (Y.y * rr-(Z.x * Y.x + Z.z * Y.z)*Z.y);
+  let zAngle = acos(min(1,sp / (Ry * rh)));
+  console.log(zAngle / PI, sp/(Ry*rh));
+
+  if (Y.x > 0) zAngle *= -1;
+
+  let R = sqrt(Z.x ** 2 + Z.y ** 2 + Z.z ** 2);
   let xAngle = acos(r / R);
-  if (Z.y < 0) xAngle *= -1;
+  if (Z.y > 0) xAngle *= -1;
   let yAngle = acos(Z.z / r);
   if (Z.x < 0) yAngle *= -1;
   rotateY(yAngle);
-  rotateX(-xAngle);
+  rotateX(xAngle);
+  rotateZ(zAngle);
   rotateX(PI / 2);
 }
 
@@ -246,6 +263,7 @@ class Planet {
   isHit() {
     for (let proj of projectiles) {
       if (this.pos.dist(proj.pos) < this.r) {
+        bombsound.play();
         return true;
       }
     }
@@ -262,7 +280,7 @@ class Projectile {
   }
   show() {
     push();
-    transform(this.pos, this.Z);
+    transform(this.pos, this.Z, new Vec(0, 1, 0));
     noStroke();
     fill(color('magenta'));
     cylinder(1, 80);
