@@ -96,7 +96,7 @@ class Vec {
     this.y = y;
     this.z = z;
   }
-  //rotation um einen kleinen Winkel da
+  //rotation um einen kleinen Winkel da um den Vektor n
   rot(n, da) {
     let dx = (n.y * this.z - n.z * this.y) * da;
     let dy = (n.z * this.x - n.x * this.z) * da;
@@ -104,6 +104,10 @@ class Vec {
     this.x += dx;
     this.y += dy;
     this.z += dz;
+    let R=Math.sqrt(this.x**2+this.y**2+this.z**2)
+    this.x /=R;
+    this.y /=R;
+    this.z /=R;
   }
   trans(v, t) {
     this.x += v.x * t;

@@ -212,24 +212,16 @@ function isHit(player) {
 
 function transform(pos, Z, Y) {
   translate(pos.x, pos.y, pos.z);
-  let rr = (Z.x ** 2 + Z.z ** 2);
-  let r = sqrt(rr);
-  let Ry=sqrt(Y.x**2+Y.y**2+Y.z**2);
-  let rh = r*sqrt(Z.y**2 + rr);
-  let sp = (Y.y * rr-(Z.x * Y.x + Z.z * Y.z)*Z.y);
-  let zAngle = acos(min(1,sp / (Ry * rh)));
-  console.log(zAngle / PI, sp/(Ry*rh));
-
-  if (Y.x > 0) zAngle *= -1;
-
-  let R = sqrt(Z.x ** 2 + Z.y ** 2 + Z.z ** 2);
-  let xAngle = acos(r / R);
-  if (Z.y > 0) xAngle *= -1;
-  let yAngle = acos(Z.z / r);
-  if (Z.x < 0) yAngle *= -1;
-  rotateY(yAngle);
-  rotateX(xAngle);
-  rotateZ(zAngle);
+  let beta=acos(Z.z);
+  let r=sqrt(Z.x**2+Z.y**2);
+  let ca=Z.x/r;
+  let sa=Z.y/r;
+  let alpha=acos(ca);
+  let gamma=acos(Y.x*sa-Y.y*ca);
+  rotateZ(alpha);
+  rotateY(beta);
+  rotateZ(gamma);
+  rotateZ(PI);
   rotateX(PI / 2);
 }
 
