@@ -212,12 +212,25 @@ function isHit(player) {
 
 function transform(pos, Z, Y) {
   translate(pos.x, pos.y, pos.z);
-  let beta=acos(Z.z);
-  let r=sqrt(Z.x**2+Z.y**2);
-  let ca=Z.x/r;
-  let sa=Z.y/r;
-  let alpha=acos(ca);
-  let gamma=acos(Y.x*sa-Y.y*ca);
+  let alpha = 0;
+  let beta = 0;
+  let gamma = -PI;
+  let r = sqrt(Z.x ** 2 + Z.y ** 2);
+  if (r != 0) {
+    beta = acos(Z.z);
+    let ca = Z.x / r;
+    let sa = Z.y / r;
+    alpha = acos(ca);
+    gamma = acos(Y.x * sa - Y.y * ca);
+    if (Z.y < 0) {
+      alpha = 2 * PI - alpha;
+    }
+    if (Y.z > 0) {
+      gamma = 2 * PI - gamma;
+    }
+  }
+  // console.log(alpha, beta, gamma);
+  // console.log(Z.x, Z.y, Z.z);
   rotateZ(alpha);
   rotateY(beta);
   rotateZ(gamma);
