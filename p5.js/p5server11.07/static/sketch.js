@@ -229,8 +229,6 @@ function transform(pos, Z, Y) {
       gamma = 2 * PI - gamma;
     }
   }
-  // console.log(alpha, beta, gamma);
-  // console.log(Z.x, Z.y, Z.z);
   rotateZ(alpha);
   rotateY(beta);
   rotateZ(gamma);
