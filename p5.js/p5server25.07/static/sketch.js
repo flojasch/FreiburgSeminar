@@ -60,28 +60,31 @@ socket.on('state', (data) => {
     socket.emit('movement', movement);
     background(0);
 
-    let player = data.players[socket.id] || {};
-    let pos = player.pos || {};
-    Z = player.Z || {};
-    Y = player.Y || {};
-
-    let cpos = new Vec(pos.x, pos.y, pos.z);
-    cpos.trans(Z, 140);
-    cpos.trans(Y, -30);
-    let clook = new Vec(pos.x, pos.y, pos.z);
-    clook.trans(Y, -30);
-    camera(cpos.x, cpos.y, cpos.z, clook.x, clook.y, clook.z, Y.x, Y.y, Y.z);
-
     entities['players'] = new Players(data.players);
     entities['planets'] = new Planets(data.planets);
     entities['explosions'] = new Explosions(data.explosions);
     entities['projectiles'] = new Projectiles(data.projectiles);
+
+    let player = entities['players'].get(socket.id);
+    if (player != undefined) {
+      
+      Z = player.Z;
+      Y = player.Y;
+
+      let cpos = player.pos.copy();
+      cpos.trans(Z, 140);
+      cpos.trans(Y, -30);
+      let clook = player.pos.copy();
+      clook.trans(Y, -30);
+      camera(cpos.x, cpos.y, cpos.z, clook.x, clook.y, clook.z, Y.x, Y.y, Y.z);
+    }
 
     for (let entity in entities) {
       entities[entity].show();
     }
   }
 });
+
 
 function transform(pos, Z, Y) {
   translate(pos.x, pos.y, pos.z);

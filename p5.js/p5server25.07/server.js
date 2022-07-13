@@ -35,10 +35,40 @@ class Vec {
   }
 }
 
+class Players {
+  constructor() {
+    this.list = [];
+  }
+  add(player) {
+    this.list.push(player);
+  }
+  update() {
+    for (let player of this.list) {
+      player.update();
+    }
+  }
+  get(id) {
+    for (let player of this.list) {
+      if (player.id == id) {
+        return player;
+      }
+    }
+  }
+  delete(id) {
+    for (let player of this.list) {
+      if (player.id == id) {
+        this.list.splice(this.list.indexOf(player), 1);
+        return;
+      }
+    }
+  }
+
+}
+
 class Player {
   constructor(id) {
-    this.lives=4;
-    this.score=0;
+    this.lives = 4;
+    this.score = 0;
     this.id = id;
     this.pos = new Vec(rand(), rand(), rand());
     this.X = new Vec(1, 0, 0);
@@ -48,6 +78,7 @@ class Player {
     let models = ['tie', 'xwing'];
     let index = Math.floor(models.length * Math.random());
     this.model = models[index];
+    this.r=15;
   }
   update() {
     this.pos.trans(this.Z, -this.speed);
@@ -65,7 +96,7 @@ class Projectiles {
       projectile.update();
       if (projectile.time > 100) remove = true;
       if (projectile.hit(planets.list)) remove = true;
-      //if (projectile.hit(players.list)) remove = true;
+      if (projectile.hit(players.list)) remove = true;
       if (remove) this.list.splice(this.list.indexOf(projectile), 1);
     }
   }
@@ -172,71 +203,71 @@ server.listen(5000, function () {
 });
 // http://localhost:5000
 
-let players = {};
+let players = new Players();
 let projectiles = new Projectiles();
 let planets = new Planets();
 let explosions = new Explosions();
 
 io.on('connection', (socket) => {
   socket.on('new_player', () => {
-    players[socket.id] = new Player(socket.id);
+    players.add(new Player(socket.id));
     console.log('user ' + socket.id + ' connected');
   });
 
   socket.on('movement', (data) => {
-    const player = players[socket.id] || {};
-    let Z = player.Z;
-    let X = player.X;
-    let Y = player.Y;
+    const player = players.get(socket.id);
+    if (player != undefined) {
+      let Z = player.Z;
+      let X = player.X;
+      let Y = player.Y;
 
-    const da = 0.015;
-    if (data.left) {
-      Z.rot(Y, da);
-      X.rot(Y, da);
-    }
-    if (data.right) {
-      Z.rot(Y, -da);
-      X.rot(Y, -da);
-    }
-    if (data.up) {
-      Z.rot(X, -da);
-      Y.rot(X, -da);
-    }
-    if (data.down) {
-      Z.rot(X, da);
-      Y.rot(X, da);
-    }
-    if (data.tleft) {
-      X.rot(Z, -da);
-      Y.rot(Z, -da);
-    }
-    if (data.tright) {
-      X.rot(Z, da);
-      Y.rot(Z, da);
-    }
-    if (data.forward) {
-      if (player.speed < 8) player.speed += 0.1;
-    }
-    if (data.backward) {
-      if (player.speed > -2) player.speed -= 0.1;
-    }
-    if (data.projectile) {
-      projectiles.add(new Projectile(player));
+      const da = 0.015;
+      if (data.left) {
+        Z.rot(Y, da);
+        X.rot(Y, da);
+      }
+      if (data.right) {
+        Z.rot(Y, -da);
+        X.rot(Y, -da);
+      }
+      if (data.up) {
+        Z.rot(X, -da);
+        Y.rot(X, -da);
+      }
+      if (data.down) {
+        Z.rot(X, da);
+        Y.rot(X, da);
+      }
+      if (data.tleft) {
+        X.rot(Z, -da);
+        Y.rot(Z, -da);
+      }
+      if (data.tright) {
+        X.rot(Z, da);
+        Y.rot(Z, da);
+      }
+      if (data.forward) {
+        if (player.speed < 8) player.speed += 0.1;
+      }
+      if (data.backward) {
+        if (player.speed > -2) player.speed -= 0.1;
+      }
+      if (data.projectile) {
+        projectiles.add(new Projectile(player));
+      }
     }
   });
 
   socket.on('disconnect', () => {
     console.log('user ' + socket.id + ' disconnected');
-    delete players[socket.id];
+    players.delete(socket.id);
   });
 });
 
 setInterval(() => {
-  for (let id in players) {
-    players[id].update();
-  }
   projectiles.update();
   explosions.update();
+  players.update();
   io.sockets.emit('state', {
     players: players,
     planets: planets,
@@ -244,7 +275,3 @@ setInterval(() => {
     explosions: explosions,
   });
 }, 1000 / 60);
-
-
-
-
