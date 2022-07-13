@@ -320,7 +320,7 @@ class Ship {
 
 class BattleGame {
   constructor() {
-    this.graphics = new graphics_ohne.Graphics(this);
+    this.graphics = new graphics.Graphics(this);
     const x = 0; //+Math.random() * 100;
     const y = 5000; //+Math.random() * 100;
     const z = 20000; //+Math.random() * 100;
