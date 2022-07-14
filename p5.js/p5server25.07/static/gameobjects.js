@@ -21,6 +21,8 @@ class Vec {
 class Players {
     constructor(players) {
         this.list = [];
+        this.xwingnum=players.xwingnum;
+        this.tienum=players.tienum;
         for (let player of players.list) {
             this.list.push(new Player(player))
         }
@@ -46,6 +48,8 @@ class Player {
         this.Y = player.Y;
         this.id = player.id;
         this.model = player.model;
+        this.score=player.score;
+        this.lives=player.lives;
     }
     show() {
         push();
@@ -146,6 +150,9 @@ class Explosions {
         this.list = [];
         for (let explosion of explosions.list) {
             this.list.push(new Explosion(explosion));
+            if(explosion.time<2){
+                bombsound.play();
+            }
         }
     }
     show() {

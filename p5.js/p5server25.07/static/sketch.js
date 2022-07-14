@@ -1,10 +1,5 @@
 const socket = io();
-let score = 0;
-let lives = 4;
 let text;
-let tienumber = 0;
-let xwingnumber = 0;
-
 let entities = {};
 
 let movement = {
@@ -55,11 +50,7 @@ function windowResized() {
 
 socket.on('state', (data) => {
   if (start) {
-    text.html('Score: ' + score + '   Lives: ' + lives +
-      '  ties: ' + tienumber + '  xwings: ' + xwingnumber);
-    socket.emit('movement', movement);
     background(0);
-
     entities['players'] = new Players(data.players);
     entities['planets'] = new Planets(data.planets);
     entities['explosions'] = new Explosions(data.explosions);
@@ -67,7 +58,6 @@ socket.on('state', (data) => {
 
     let player = entities['players'].get(socket.id);
     if (player != undefined) {
-      
       Z = player.Z;
       Y = player.Y;
 
@@ -77,14 +67,29 @@ socket.on('state', (data) => {
       let clook = player.pos.copy();
       clook.trans(Y, -30);
       camera(cpos.x, cpos.y, cpos.z, clook.x, clook.y, clook.z, Y.x, Y.y, Y.z);
+
+      for (let entity in entities) {
+        entities[entity].show();
+      }
+
+      setText(player);
+
+      socket.emit('movement', movement);
     }
 
-    for (let entity in entities) {
-      entities[entity].show();
-    }
   }
 });
 
+function setText(player) {
+  text.html('Score: ' + player.score + '   Health: ' + player.lives +
+    '  ties: ' + entities['players'].tienum + '  xwings: ' + entities['players'].xwingnum);
+  
+    if (player.lives <= 0) {
+    text.style('font-size', '600%');
+    text.style('color', 'bb0000');
+    text.html('Game Over');
+  }
+}
 
 function transform(pos, Z, Y) {
   translate(pos.x, pos.y, pos.z);
