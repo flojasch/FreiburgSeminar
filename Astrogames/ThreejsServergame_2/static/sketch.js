@@ -1,121 +1,167 @@
-const socket = io();
-let text;
-let entities = {};
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
 
-let movement = {
-  up: false,
-  down: false,
-  left: false,
-  right: false,
-  forward: false,
-  backward: false,
-  tleft: false,
-  tright: false,
-  projectile: false,
-}
-let img, xwing, metall, fire, tie, lasersound, bombsound;
-let alphax = 0,
-  alphay = 0,
-  speed = 0;
-let start = false;
-const amax = Math.PI / 4;
-const da = 0.1;
+import {
+  GLTFLoader
+} from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/loaders/GLTFLoader.js';
+
+import {
+  objects
+} from './gameobjects.js';
 
 
-function setup() {
-  fire = loadImage('static/images/explosion.jpg');
-  img = loadImage('static/images/earth.jpg');
-  xwing = loadModel('static/models/xwing.obj', true);
-  tie = loadModel('static/models/tie.obj', true);
-  metall = loadImage('static/images/metall.jpg');
-  lasersound = loadSound('static/sounds/laser.wav');
-  bombsound = loadSound('static/sounds/bomb.wav');
+class BattleGame {
+  constructor() {
+    this.socket = io();
+    this.movement = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      forward: false,
+      backward: false,
+      tleft: false,
+      tright: false,
+      projectile: false,
+    }
 
-  createCanvas(windowWidth - 20, windowHeight - 20, WEBGL);
+    this._threejs = new THREE.WebGLRenderer({
+      antialias: true,
+    });
 
-  socket.emit('new_player');
+    this._threejs.setPixelRatio(window.devicePixelRatio);
+    this._width = window.innerWidth;
+    this._height = window.innerHeight;
+    this._threejs.setSize(this._width, this._height);
 
-  text = createP().position(20, 20);
-  text.style('font-size', '200%');
-  text.style('color', 'bbbbbb');
+    document.body.appendChild(this._threejs.domElement);
 
-  ambientLight(100);
-  directionalLight(200, 200, 200, 1, -1, -1);
-  start = true;
-}
+    window.addEventListener('resize', () => {
+      this._OnWindowResize();
+    }, false);
+    this._scene = new THREE.Scene();
+    this._entities = {};
+    this._models = {
+      'xwing': new THREE.Object3D(),
+      'tie': new THREE.Object3D(),
+    };
+    this._Initialize();
+  }
 
-function windowResized() {
-  resizeCanvas(windowWidth - 20, windowHeight - 20);
-}
+  _Initialize() {
+    this._SetCamera();
+    this._LoadBackground();
+    this._SetLight();
+    this._SetSound();
+    this._SetModels();
+    this.socket.emit('new_player');
+    this._Socket();
+  }
 
-socket.on('state', (data) => {
-  if (start) {
-    background(0);
-    entities['players'] = new Players(data.players);
-    entities['planets'] = new Planets(data.planets);
-    entities['explosions'] = new Explosions(data.explosions);
-    entities['projectiles'] = new Projectiles(data.projectiles);
+  _Socket() {
+    socket.on('state', (data) => {
+      this._entities['players'] = new objects.Players(data.players);
+      this._entities['planets'] = new objects.Planets(data.planets);
+      this._entities['explosions'] = new objects.Explosions(data.explosions);
+      this._entities['projectiles'] = new objects.Projectiles(data.projectiles);
 
-    let player = entities['players'].get(socket.id);
-    if (player != undefined) {
-      Z = player.Z;
-      Y = player.Y;
+      let player = entities['players'].get(socket.id);
+      if (player != undefined) {
+        Z = player.Z;
+        Y = player.Y;
 
-      let cpos = player.pos.copy();
-      cpos.trans(Z, 140);
-      cpos.trans(Y, -30);
-      let clook = player.pos.copy();
-      clook.trans(Y, -30);
-      camera(cpos.x, cpos.y, cpos.z, clook.x, clook.y, clook.z, Y.x, Y.y, Y.z);
+        let cpos = player.pos.copy();
+        cpos.trans(Z, 140);
+        cpos.trans(Y, -30);
+        let clook = player.pos.copy();
+        clook.trans(Y, -30);
 
-      for (let entity in entities) {
-        entities[entity].show();
+        this._camera.position.set(cpos.x, cpos.y, cpos.z);
+        this._camera.lookAt(clook.x,clook.y,clook.z);
+        this._camera.up.set(Y.x,Y.y,Y.z);
+        
+        for (let entity in entities) {
+          entities[entity].show();
+        }
+        this._threejs.render(this._scene, this._camera);
+
+        socket.emit('movement', this.movement);
       }
 
-      setText(player);
-
-      socket.emit('movement', movement);
-    }
-
+    });
   }
-});
 
-function setText(player) {
-  text.html('Score: ' + player.score + '   Health: ' + player.lives +
-    '  ties: ' + entities['players'].tienum + '  xwings: ' + entities['players'].xwingnum);
-  
-    if (player.lives <= 0) {
-    text.style('font-size', '600%');
-    text.style('color', 'bb0000');
-    text.html('Game Over');
+  _SetCamera() {
+    const fov = 75;
+    const aspect = this._width / this._height;
+    const near = 0.1;
+    const far = 10000;
+    this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    this._scene.add(this._camera);
+  }
+
+  _SetSound() {
+    const listener = new THREE.AudioListener();
+    const audioLoader = new THREE.AudioLoader();
+
+    this._lasersound = new THREE.Audio(listener);
+    audioLoader.load('sounds/laser.wav', (buffer) => {
+      this._lasersound.setBuffer(buffer);
+    });
+
+    this._bombsound = new THREE.Audio(listener);
+    audioLoader.load('sounds/bomb.wav', (buffer) => {
+      this._bombsound.setBuffer(buffer);
+    });
+  }
+
+  _SetLight() {
+    let light = new THREE.DirectionalLight(0x808080, 1.0);
+    light.position.set(-100, 100, -100);
+    light.target.position.set(0, 0, 0);
+    this._scene.add(light);
+
+    light = new THREE.AmbientLight(0x808080, 0.5);
+    this._scene.add(light);
+  }
+
+  _SetModels() {
+    const loader = new GLTFLoader();
+    loader.load('./models/tie-fighter-gltf/scene.gltf', (gltf) => {
+      gltf.scene.scale.set(0.5, 0.5, 0.5);
+      gltf.scene.rotation.y = Math.PI;
+      this._models.tie.add(gltf.scene);
+    });
+    loader.load('./models/xwing-gltf/scene.gltf', (gltf) => {
+      gltf.scene.scale.set(0.5, 0.5, 0.5);
+      gltf.scene.rotation.y = Math.PI;
+      this._models.xwing.add(gltf.scene);
+    });
+  }
+
+  _LoadBackground() {
+    const loader = new THREE.CubeTextureLoader();
+    const texture = loader.load([
+      './images/space-posx.jpg',
+      './images/space-negx.jpg',
+      './images/space-posy.jpg',
+      './images/space-negy.jpg',
+      './images/space-posz.jpg',
+      './images/space-negz.jpg',
+    ]);
+    this._scene.background = texture;
+  }
+
+  _OnWindowResize() {
+    this._width = window.innerWidth;
+    this._height = window.innerHeight;
+    this._camera.aspect = this._width / this._height;
+    this._camera.updateProjectionMatrix();
+    this._threejs.setSize(this._width, this._height);
   }
 }
 
-function transform(pos, Z, Y) {
-  translate(pos.x, pos.y, pos.z);
-  let alpha = 0;
-  let beta = 0;
-  let gamma = -PI;
-  let r = sqrt(Z.x ** 2 + Z.y ** 2);
-  if (r != 0) {
-    beta = acos(Z.z);
-    let ca = Z.x / r;
-    let sa = Z.y / r;
-    alpha = acos(ca);
-    gamma = acos(Y.x * sa - Y.y * ca);
-    if (Z.y < 0) {
-      alpha = 2 * PI - alpha;
-    }
-    if (Y.z > 0) {
-      gamma = 2 * PI - gamma;
-    }
-  }
-  rotateZ(alpha);
-  rotateY(beta);
-  rotateZ(gamma);
-  rotateZ(PI);
-  rotateX(PI / 2);
-}
+let battlegame = new BattleGame();
+
 
 document.addEventListener('keydown', (event) => {
   switch (event.keyCode) {
@@ -145,7 +191,7 @@ document.addEventListener('keydown', (event) => {
       break;
     case 32: //space
       movement.projectile = true;
-      lasersound.play();
+      battlegame._lasersound.play();
       break;
   }
 });

@@ -21,6 +21,18 @@ class Vec {
     this.y /= R;
     this.z /= R;
   }
+  //rotation um einen endlichen Winkel
+  Rot(n, alpha) {
+    let c = Math.cos(alpha);
+    let s = Math.sin(alpha);
+    let x = this.x;
+    let y = this.y;
+    let z = this.z;
+    this.x = x * (n.x * n.x * (1. - c) + c) + y * (n.x * n.y * (1. - c) - n.z * s) + z * (n.x * n.z * (1. - c) + n.y * s);
+    this.y = x * (n.x * n.y * (1. - c) + n.z * s) + y * (n.y * n.y * (1. - c) + c) + z * (n.y * n.z * (1. - c) - n.x * s);
+    this.z = x * (n.x * n.z * (1. - c) - n.y * s) + y * (n.z * n.y * (1. - c) + n.x * s) + z * (n.z * n.z * (1. - c) + c);
+  }
+
   trans(v, t) {
     this.x += v.x * t;
     this.y += v.y * t;
@@ -79,6 +91,9 @@ class Player {
     this.X = new Vec(1, 0, 0);
     this.Y = new Vec(0, 1, 0);
     this.Z = new Vec(0, 0, 1);
+    this.setModelAchses();
+    this.xa = 0;
+    this.za = 0;
     this.speed = 0;
     this.r = 15;
     this.setmodel();
@@ -96,7 +111,23 @@ class Player {
     entities['players'].tienum += 1 - index;
     entities['players'].xwingnum += index;
   }
-
+  setModelAchses() {
+    this.mX = this.X.copy();
+    this.mY = this.Y.copy();
+    this.mZ = this.Z.copy();
+  }
+  rotX(alpha){
+    this.Z.rot(this.X, alpha);
+    this.Y.rot(this.X, alpha);
+  }
+  rotY(alpha){
+    this.Z.rot(this.Y, alpha);
+    this.X.rot(this.Y, alpha);
+  }
+  rotZ(alpha){
+    this.X.rot(this.Z, alpha);
+    this.Y.rot(this.Z, alpha);
+  }
   update() {
     this.pos.trans(this.Z, -this.speed);
     this.speed *= 0.98;
@@ -114,13 +145,12 @@ class Player {
     for (let obj of entity.list) {
       if (this.pos.dist(obj.pos) < obj.r) {
         entities['explosions'].add(new Explosion(this.pos.copy()));
-        this.lives=-1;
+        this.lives = -1;
         return true;
       }
     }
     return false;
   }
-
 }
 
 class Projectiles {
@@ -148,7 +178,7 @@ class Projectile {
   constructor(player) {
     this.pos = player.pos.copy();
     this.speed = -20;
-    this.Z = player.Z.copy();
+    this.Z = player.mZ.copy();
     this.id = player.id;
     this.time = 0;
 
@@ -296,29 +326,41 @@ io.on('connection', (socket) => {
       let Y = player.Y;
 
       const da = 0.015;
+      const dma = 0.05;
+      const amax = Math.PI / 4;
+
+      player.setModelAchses();
+
+      player.mX.Rot(Z, player.za);
+      player.mY.Rot(Z, player.za);
+
+      player.mY.Rot(X, player.xa);
+      player.mZ.Rot(X, player.xa);
+
+      if (!data.up && !data.down) player.xa *= 0.85;
+      if (!data.left && !data.right) player.za *= 0.85;
+
       if (data.left) {
-        Z.rot(Y, da);
-        X.rot(Y, da);
+        player.rotY(da);
+        if (player.za > -amax) player.za -= dma;
       }
       if (data.right) {
-        Z.rot(Y, -da);
-        X.rot(Y, -da);
+        player.rotY(-da);
+        if (player.za < amax) player.za += dma;
       }
       if (data.up) {
-        Z.rot(X, -da);
-        Y.rot(X, -da);
+        player.rotX(-da);
+        if (player.xa > -amax) player.xa -= dma;
       }
       if (data.down) {
-        Z.rot(X, da);
-        Y.rot(X, da);
+        player.rotX(da);
+        if (player.xa < amax) player.xa += dma;
       }
       if (data.tleft) {
-        X.rot(Z, -da);
-        Y.rot(Z, -da);
+        player.rotZ(-da);
       }
       if (data.tright) {
-        X.rot(Z, da);
-        Y.rot(Z, da);
+        player.rotZ(da);
       }
       if (data.forward) {
         if (player.speed < 8) player.speed += 0.1;
