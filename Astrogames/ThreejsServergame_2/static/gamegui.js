@@ -16,6 +16,15 @@ export const gamegui = (function () {
       scoreText.className = 'guiSmallText';
       scoreText.innerText = '0';
       scoreText.id = 'scoreText';
+
+      const speedTitle = document.createElement('div');
+      speedTitle.className = 'guiBigText';
+      speedTitle.innerText = 'SPEED';
+  
+      const speedText = document.createElement('div');
+      speedText.className = 'guiSmallText';
+      speedText.innerText = '0';
+      speedText.id = 'speedText';
   
       const healthTitle = document.createElement('div');
       healthTitle.className = 'guiBigText';
@@ -28,17 +37,21 @@ export const gamegui = (function () {
   
       scoreDiv.appendChild(scoreTitle);
       scoreDiv.appendChild(scoreText);
+      scoreDiv.appendChild(speedTitle);
+      scoreDiv.appendChild(speedText);
       scoreDiv.appendChild(healthTitle);
       scoreDiv.appendChild(healthText);
-  
+      
+
       guiDiv.appendChild(scoreDiv);
       document.body.appendChild(guiDiv);
   
     }
     Update(player) {
       document.getElementById('scoreText').innerText = player.score;
+      document.getElementById('speedText').innerText = player.speed;
       document.getElementById('healthText').innerText = player.lives;
-      if (player.lives < 0) {
+      if (player.lives <= 0) {
         const gameOver = document.createElement('div');
         gameOver.className = 'veryBigText';
         gameOver.innerText = 'GAME OVER';

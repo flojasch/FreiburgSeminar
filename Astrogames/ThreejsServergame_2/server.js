@@ -1,5 +1,5 @@
 function rand() {
-  let range = 0
+  let range = 40;
   return range * (1 - 2 * Math.random());
 }
 
@@ -63,7 +63,7 @@ class Players {
       let player = this.list[playerId];
       player.update();
       if (player.lives <= 0) {
-        delete this.list[player.Id];
+        delete this.list[playerId];
       }
     }
   }
@@ -77,7 +77,7 @@ class Player {
     this.lives = 10;
     this.score = 0;
     this.id = id;
-    this.pos = new Vec(rand(), rand(), rand());
+    this.pos = new Vec(rand(), 0, rand());
     this.X = new Vec(1, 0, 0);
     this.Y = new Vec(0, 1, 0);
     this.Z = new Vec(0, 0, 1);
@@ -85,13 +85,13 @@ class Player {
     this.xa = 0;
     this.za = 0;
     this.speed = 0;
-    this.r = 15;
+    this.r = 1;
     this.setmodel();
     this.loadtime = 0;
   }
 
   setmodel() {
-    let diff = entities['players'].tienum - entities['players'].xwingnum;
+    let diff = entities['player'].tienum - entities['player'].xwingnum;
     let models = ['tie', 'xwing'];
     let index;
     if (diff == 0)
@@ -99,8 +99,8 @@ class Player {
     else
       index = (diff + 1) / 2;
     this.model = models[index];
-    entities['players'].tienum += 1 - index;
-    entities['players'].xwingnum += index;
+    entities['player'].tienum += 1 - index;
+    entities['player'].xwingnum += index;
   }
   setModelAchses() {
     this.mX = this.X.copy();
@@ -137,7 +137,7 @@ class Player {
     for (let objId in entity.list) {
       let obj = entity.list[objId];
       if (this.pos.dist(obj.pos) < obj.r) {
-        entities['explosions'].add(new Explosion(this.pos.copy()));
+        entities['explosion'].add(new Explosion(this.pos.copy()));
         this.lives = -1;
         return true;
       }
@@ -197,9 +197,10 @@ class Projectile {
     for (let objId in entity.list) {
       let obj = entity.list[objId];
       if (this.pos.dist(obj.pos) < obj.r && obj.id != this.id) {
-        entities['explosions'].add(new Explosion(this.pos.copy()));
+        entities['explosion'].add(new Explosion(this.pos.copy()));
         obj.lives--;
-        entities['players'].list[this.id].score += 100;
+        let player = entities['player'].list[this.id];
+        if (player != undefined) player.score += 100;
         return true;
       }
     }
@@ -217,14 +218,8 @@ class Planets {
   }
 
   create() {
-    for (let i = -3; i <= 3; i += 2) {
-      for (let j = -2; j <= 3; j += 2) {
-        for (let k = -2; k <= 3; k += 2) {
-          this.list[this.id] = new Planet(500 * i, 500 * j, 500 * k, 100);
-          this.id++;
-        }
-      }
-    }
+    this.list[this.id] = new Planet(500, 0, 500, 200);
+    this.id++;
   }
 
   update() {
@@ -248,12 +243,9 @@ class Explosion {
   constructor(pos) {
     this.pos = pos;
     this.time = 0;
-    this.r = 0;
-    this.maxtime = 100;
+    this.maxtime = 1000;
   }
   update() {
-    let t = this.time;
-    this.r = 0.02 * t * (this.maxtime - t);
     this.time += 1;
   }
 }
@@ -304,15 +296,15 @@ server.listen(5000, function () {
 
 let playernum = 0;
 let entities = {}
-entities['players'] = new Players();
-entities['projectiles'] = new Projectiles();
-entities['planets'] = new Planets();
-entities['explosions'] = new Explosions();
+entities['player'] = new Players();
+entities['projectile'] = new Projectiles();
+entities['planet'] = new Planets();
+entities['explosion'] = new Explosions();
 
 io.on('connection', (socket) => {
   socket.on('new_player', () => {
-    if (playernum < 7) {
-      entities['players'].add(new Player(socket.id));
+    if (playernum < 6) {
+      entities['player'].add(new Player(socket.id));
       console.log('user ' + socket.id + ' connected');
       ++playernum;
     } else {
@@ -321,7 +313,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('movement', (data) => {
-    const player = entities['players'].list[socket.id];
+    const player = entities['player'].list[socket.id];
     if (player != undefined) {
       let Z = player.Z;
       let X = player.X;
@@ -365,14 +357,14 @@ io.on('connection', (socket) => {
         player.rotZ(da);
       }
       if (data.forward) {
-        if (player.speed < 2) player.speed += 0.1;
+        if (player.speed < 0.5) player.speed += 0.02;
       }
       if (data.backward) {
-        if (player.speed > -1) player.speed -= 0.1;
+        if (player.speed > 0) player.speed -= 0.02;
       }
       if (data.fire) {
         if (player.loadtime == 0) {
-          entities['projectiles'].add(new Projectile(player));
+          entities['projectile'].add(new Projectile(player));
           player.loadtime = 20;
         }
       }
@@ -381,7 +373,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('user ' + socket.id + ' disconnected');
-    delete entities['players'].list[socket.id];
+    delete entities['player'].list[socket.id];
   });
 });
 

@@ -21,6 +21,7 @@ class ObjectManager {
     this.list = {};
     this.name = params.name;
     this.scene = params.scene;
+    this.sound = params.sound;
   }
   update(typeList) {
     this.delete(typeList);
@@ -46,7 +47,8 @@ class ObjectManager {
       if (this.list[id] == undefined) {
         this.list[id] = new objects[this.name]({
           obj: typeList[id],
-          scene: this.scene
+          scene: this.scene,
+          sound: this.sound,
         });
       }
     }
@@ -62,7 +64,7 @@ class BattleGame {
     this.graphics.Initialize();
     this._camera = this.graphics.Camera;
     this._scene = this.graphics.Scene;
-
+    this.sound = {};
     this._entities = {};
 
     this._Initialize();
@@ -71,19 +73,14 @@ class BattleGame {
   _Initialize() {
     this._LoadBackground();
     this._SetSound();
-    this._entities['players'] = new ObjectManager({
-      name: 'player',
-      scene: this._scene
-    });
-    this._entities['planets'] = new ObjectManager({
-      name: 'planet',
-      scene: this._scene
-    });
-    //this._entities['explosions'] = new ObjectManager('explosion');
-    this._entities['projectiles'] = new ObjectManager({
-      name: 'projectile',
-      scene: this._scene
-    });
+    let nameList = ['player', 'planet', 'explosion', 'projectile'];
+    for (let name of nameList) {
+      this._entities[name] = new ObjectManager({
+        name: name,
+        scene: this._scene,
+        sound: this.sound,
+      });
+    }
     this.socket.emit('new_player');
     this._Socket();
   }
@@ -93,7 +90,7 @@ class BattleGame {
       this._StepEntities(data);
       this.controls.update();
 
-      let player = data['players'].list[this.socket.id];
+      let player = data['player'].list[this.socket.id];
       if (player != undefined) {
         this.updateCamera(player);
         this.gamegui.Update(player);
@@ -128,14 +125,9 @@ class BattleGame {
     const listener = new THREE.AudioListener();
     const audioLoader = new THREE.AudioLoader();
 
-    this._lasersound = new THREE.Audio(listener);
-    audioLoader.load('static/sounds/laser.wav', (buffer) => {
-      this._lasersound.setBuffer(buffer);
-    });
-
-    this._bombsound = new THREE.Audio(listener);
+    this.sound['bombsound'] = new THREE.Audio(listener);
     audioLoader.load('static/sounds/bomb.wav', (buffer) => {
-      this._bombsound.setBuffer(buffer);
+      this.sound['bombsound'].setBuffer(buffer);
     });
   }
 
