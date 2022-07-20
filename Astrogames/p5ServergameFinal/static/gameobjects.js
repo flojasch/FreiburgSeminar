@@ -19,8 +19,10 @@ class Vec {
 }
 
 class Players {
-    constructor(players) {
-        this.list = [];
+    constructor() {
+        this.list = [];  
+    }
+    update(players){
         this.xwingnum = players.xwingnum;
         this.tienum = players.tienum;
         for (let player of players.list) {

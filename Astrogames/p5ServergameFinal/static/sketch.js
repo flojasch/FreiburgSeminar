@@ -30,6 +30,10 @@ function setup() {
 
   ambientLight(100);
   directionalLight(200, 200, 200, 1, -1, -1);
+  entities['players'].push(new Players());
+  entities['planets'].push(new Planets());
+  entities['explosions'].push(new Explosions());
+  entities['projectiles'].push(new Projectiles());
   socket.emit('new_player');
   start = true;
 }
@@ -41,11 +45,10 @@ function windowResized() {
 socket.on('state', (data) => {
   if (start) {
     background(0);
-    entities['players'] = new Players(data.players);
-    entities['planets'] = new Planets(data.planets);
-    entities['explosions'] = new Explosions(data.explosions);
-    entities['projectiles'] = new Projectiles(data.projectiles);
-
+    for (let entity in entities) {
+      entities[entity].update(data[entity]);
+      entities[entity].show();
+    }
     let player = entities['players'].get(socket.id);
     if (player != undefined) {
       Z = player.Z;
@@ -57,10 +60,6 @@ socket.on('state', (data) => {
       let clook = player.pos.copy();
       clook.trans(Y, -30);
       camera(cpos.x, cpos.y, cpos.z, clook.x, clook.y, clook.z, Y.x, Y.y, Y.z);
-
-      for (let entity in entities) {
-        entities[entity].show();
-      }
 
       setText(player);
 

@@ -141,21 +141,25 @@ class Player {
 
 class Projectiles {
   constructor() {
-    this.list = [];
+    this.obj = {};
     this.hitable = false;
     this.hard = false;
   }
   update() {
     let remove = false;
-    for (let projectile of this.list) {
+    for (let id  in this.list) {
+      let projectile=this.obj[id];
       projectile.update();
       if (projectile.time > 100) remove = true;
       if (projectile.hit(entities)) remove = true;
-      if (remove) this.list.splice(this.list.indexOf(projectile), 1);
+      if (remove) this.remove(id);
     }
   }
   add(projectile) {
     this.list.push(projectile);
+  }
+  remove(id){
+    this.list.splice(this.list.indexOf(projectile), 1);
   }
 
 }
