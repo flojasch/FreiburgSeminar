@@ -19,10 +19,8 @@ class Vec {
 }
 
 class Players {
-    constructor() {
-        this.list = [];  
-    }
-    update(players){
+    constructor(players) {
+        this.list = [];
         this.xwingnum = players.xwingnum;
         this.tienum = players.tienum;
         for (let player of players.list) {
@@ -92,7 +90,7 @@ class Planet {
     show() {
         push();
         translate(this.pos.x, this.pos.y, this.pos.z);
-        rotateY(millis() / 1000);
+        //rotateY(millis() / 10000);
         texture(img);
         noStroke();
         sphere(this.r);

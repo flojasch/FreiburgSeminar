@@ -141,25 +141,21 @@ class Player {
 
 class Projectiles {
   constructor() {
-    this.obj = {};
+    this.list = [];
     this.hitable = false;
     this.hard = false;
   }
   update() {
     let remove = false;
-    for (let id  in this.list) {
-      let projectile=this.obj[id];
+    for (let projectile of this.list) {
       projectile.update();
       if (projectile.time > 100) remove = true;
       if (projectile.hit(entities)) remove = true;
-      if (remove) this.remove(id);
+      if (remove) this.list.splice(this.list.indexOf(projectile), 1);
     }
   }
   add(projectile) {
     this.list.push(projectile);
-  }
-  remove(id){
-    this.list.splice(this.list.indexOf(projectile), 1);
   }
 
 }
@@ -167,7 +163,7 @@ class Projectiles {
 class Projectile {
   constructor(player) {
     this.pos = player.pos.copy();
-    this.speed = -20;
+    this.speed = -player.speed-30;
     this.Z = player.mZ.copy();
     this.id = player.id;
     this.time = 0;
@@ -191,6 +187,8 @@ class Projectile {
       if (this.pos.dist(obj.pos) < obj.r) {
         entities['explosions'].add(new Explosion(this.pos.copy()));
         obj.lives--;
+        let player=entities['players'].get(this.id);
+        if(player!=undefined)
         entities['players'].get(this.id).score += 100;
         return true;
       }
@@ -211,7 +209,7 @@ class Planets {
     for (let i = -3; i <= 3; i += 2) {
       for (let j = -2; j <= 3; j += 2) {
         for (let k = -2; k <= 3; k += 2) {
-          let planet = new Planet(500 * i, 500 * j, 500 * k, 100);
+          let planet = new Planet(2000 * i, 2000 * j, 2000 * k, 500);
           this.list.push(planet);
         }
       }
@@ -299,7 +297,7 @@ entities['explosions'] = new Explosions();
 
 io.on('connection', (socket) => {
   socket.on('new_player', () => {
-    if (playernum < 3) {
+    if (playernum < 6) {
       entities['players'].add(new Player(socket.id));
       console.log('user ' + socket.id + ' connected');
       ++playernum;

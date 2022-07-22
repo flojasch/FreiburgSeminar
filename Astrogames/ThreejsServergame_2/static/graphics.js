@@ -35,12 +35,12 @@ export const graphics = (function () {
     }
 
     _CreateLights() {
-      this.directionalLight = new THREE.DirectionalLight(0x808080, 1.0);
+      this.directionalLight = new THREE.DirectionalLight(0x808080, 3.0);
       this.directionalLight.position.set(-100, -100, -100);
       this.directionalLight.target.position.set(0, 0, 0);
       this._scene.add(this.directionalLight);
   
-      this.ambientlight = new THREE.AmbientLight(0x808080, 0.5);
+      this.ambientlight = new THREE.AmbientLight(0x808080, 0.7);
       this._scene.add(this.ambientlight);
     }
 
