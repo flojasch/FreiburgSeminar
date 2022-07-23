@@ -50,8 +50,8 @@ export const gamegui = (function () {
     Update(player) {
       document.getElementById('scoreText').innerText = player.score;
       document.getElementById('speedText').innerText = Math.floor(player.speed*100)/100;
-      document.getElementById('healthText').innerText = player.lives;
-      if (player.lives <= 0) {
+      document.getElementById('healthText').innerText = player.health;
+      if (player.health <= 0) {
         const gameOver = document.createElement('div');
         gameOver.className = 'veryBigText';
         gameOver.innerText = 'GAME OVER';

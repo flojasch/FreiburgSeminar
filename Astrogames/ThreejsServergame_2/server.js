@@ -48,231 +48,159 @@ class Vec {
   }
 }
 
-class Players {
-  constructor() {
-    this.list = {};
-    this.hitable = true;
-    this.xwingnum = 0;
-    this.tienum = 0;
-  }
-  add(player) {
-    this.list[player.id] = player;
-  }
-  update() {
-    for (let playerId in this.list) {
-      let player = this.list[playerId];
-      player.update();
-      if (player.lives <= 0) {
-        delete this.list[playerId];
+
+const gameobject = {
+  player: class Player {
+    constructor(id) {
+      this.health = 10;
+      this.score = 0;
+      this.id = id;
+      this.pos = new Vec(rand(), 0, rand());
+      this.X = new Vec(1, 0, 0);
+      this.Y = new Vec(0, 1, 0);
+      this.Z = new Vec(0, 0, 1);
+      this.setModelAchses();
+      this.xa = 0;
+      this.za = 0;
+      this.speed = 0;
+      this.r = 1;
+      this.setmodel();
+      this.loadtime = 0;
+      this.hitable = true;
+    }
+
+    setmodel() {
+      let models = ['tie', 'xwing'];
+      let index = Math.floor(2 * Math.random());
+      this.model = models[index];
+    }
+    setModelAchses() {
+      this.mX = this.X.copy();
+      this.mY = this.Y.copy();
+      this.mZ = this.Z.copy();
+    }
+    rotX(alpha) {
+      this.Z.rot(this.X, alpha);
+      this.Y.rot(this.X, alpha);
+    }
+    rotY(alpha) {
+      this.Z.rot(this.Y, alpha);
+      this.X.rot(this.Y, alpha);
+    }
+    rotZ(alpha) {
+      this.X.rot(this.Z, alpha);
+      this.Y.rot(this.Z, alpha);
+    }
+    update() {
+      this.pos.trans(this.Z, -this.speed);
+      this.speed *= 0.98;
+      ObjectList.hit(this,entities);
+      if (this.loadtime > 0) this.loadtime--;
+    }
+
+    hitentity(entity) {
+      for (let objId in entity.list) {
+        let obj = entity.list[objId];
+        if (this.id != obj.id && this.pos.dist(obj.pos) < obj.r) {
+          entities['explosion'].add(this.pos.copy());
+          this.health--;
+          obj.health--;
+          return true;
+        }
+      }
+      return false;
+    }
+  },
+  projectile: class Projectile {
+    constructor(player) {
+      this.pos = player.pos.copy();
+      this.speed = -player.speed - 1;
+      this.Z = player.mZ.copy();
+      this.Y = player.mY.copy();
+      this.id = player.id;
+      this.health = 200;
+      this.hitable = false;
+    }
+    update() {
+      this.pos.trans(this.Z, this.speed);
+      this.health--;
+      ObjectList.hit(this,entities);
+    }
+
+    hitentity(entity) {
+      for (let objId in entity.list) {
+        let obj = entity.list[objId];
+        if (this.pos.dist(obj.pos) < obj.r && obj.id != this.id) {
+          entities['explosion'].add(this.pos.copy());
+          obj.health--;
+          this.health = -1;
+          let player = entities['player'].list[this.id];
+          if (player != undefined) player.score += 100;
+          return;
+        }
       }
     }
-  }
-  delete(id) {
-    delete this.list[id];
+  },
+
+  planet: class Planet {
+    constructor(params) {
+      this.pos = new Vec(params.x, params.y, params.z);
+      this.r = params.r;
+      this.health = 10;
+      this.hitable = true;
+    }
+    update() {
+
+    }
+  },
+
+  explosion: class Explosion {
+    constructor(pos) {
+      this.pos = pos;
+      this.health = 1000;
+      this.hitable = false;
+    }
+    update() {
+      this.health--;
+    }
   }
 }
 
-class Player {
-  constructor(id) {
-    this.lives = 10;
-    this.score = 0;
-    this.id = id;
-    this.pos = new Vec(rand(), 0, rand());
-    this.X = new Vec(1, 0, 0);
-    this.Y = new Vec(0, 1, 0);
-    this.Z = new Vec(0, 0, 1);
-    this.setModelAchses();
-    this.xa = 0;
-    this.za = 0;
-    this.speed = 0;
-    this.r = 1;
-    this.setmodel();
-    this.loadtime = 0;
+class ObjectList {
+  constructor(name) {
+    this.list = {};
+    this.hitable = false;
+    this.id = 0;
+    this.name = name;
+    this.isPlayer = (name == 'player');
   }
-
-  setmodel() {
-    let diff = entities['player'].tienum - entities['player'].xwingnum;
-    let models = ['tie', 'xwing'];
-    let index;
-    if (diff == 0)
-      index = Math.floor(2 * Math.random());
+  add(params) {
+    if (this.isPlayer)
+      this.id = params;
     else
-      index = (diff + 1) / 2;
-    this.model = models[index];
-    entities['player'].tienum += 1 - index;
-    entities['player'].xwingnum += index;
-  }
-  setModelAchses() {
-    this.mX = this.X.copy();
-    this.mY = this.Y.copy();
-    this.mZ = this.Z.copy();
-  }
-  rotX(alpha) {
-    this.Z.rot(this.X, alpha);
-    this.Y.rot(this.X, alpha);
-  }
-  rotY(alpha) {
-    this.Z.rot(this.Y, alpha);
-    this.X.rot(this.Y, alpha);
-  }
-  rotZ(alpha) {
-    this.X.rot(this.Z, alpha);
-    this.Y.rot(this.Z, alpha);
-  }
-  update() {
-    this.pos.trans(this.Z, -this.speed);
-    this.speed *= 0.98;
-    this.hit();
-    if (this.loadtime > 0) this.loadtime--;
-  }
-
-  hit() {
-    for (let entity in entities) {
-      if (entities[entity].hard && this.hitentity(entities[entity]))
-        return;
-    }
-  }
-
-  hitentity(entity) {
-    for (let objId in entity.list) {
-      let obj = entity.list[objId];
-      if (this.pos.dist(obj.pos) < obj.r) {
-        entities['explosion'].add(new Explosion(this.pos.copy()));
-        this.lives = -1;
-        return true;
-      }
-    }
-    return false;
-  }
-}
-
-class Projectiles {
-  constructor() {
-    this.list = {};
-    this.hitable = false;
-    this.hard = false;
-    this.id = 0;
-  }
-  update() {
-    let remove = false;
-    for (let projId in this.list) {
-      let projectile = this.list[projId];
-      projectile.update();
-      if (projectile.time > 100) remove = true;
-      if (projectile.hit(entities)) remove = true;
-      if (remove) delete this.list[projId];
-    }
-  }
-  add(projectile) {
-    this.list[this.id] = projectile;
-    this.id++;
-  }
-
-}
-
-class Projectile {
-  constructor(player) {
-    this.pos = player.pos.copy();
-    this.speed = -player.speed - 1;
-    this.Z = player.mZ.copy();
-    this.Y = player.mY.copy();
-    this.id = player.id;
-    this.time = 0;
-
-  }
-  update() {
-    this.pos.trans(this.Z, this.speed);
-    this.time++;
-  }
-
-  hit(entities) {
-    for (let entity in entities) {
-      if (entities[entity].hitable && this.hitentity(entities[entity]))
-        return true;
-    }
-    return false;
-  }
-
-  hitentity(entity) {
-    for (let objId in entity.list) {
-      let obj = entity.list[objId];
-      if (this.pos.dist(obj.pos) < obj.r && obj.id != this.id) {
-        entities['explosion'].add(new Explosion(this.pos.copy()));
-        obj.lives--;
-        let player = entities['player'].list[this.id];
-        if (player != undefined) player.score += 100;
-        return true;
-      }
-    }
-    return false;
-  }
-}
-
-class Planets {
-  constructor() {
-    this.list = {};
-    this.hitable = true;
-    this.hard = true;
-    this.id = 0;
-    this.create();
-  }
-
-  create() {
-    this.list[this.id] = new Planet(500, 0, 500, 200);
-    this.id++;
-  }
-
-  update() {
-    for (let id in this.list) {
-      if (this.list[id].lives <= 0) {
-        delete this.list[id];
-      }
-    }
-  }
-}
-
-class Planet {
-  constructor(x, y, z, r) {
-    this.pos = new Vec(x, y, z);
-    this.r = r;
-    this.lives = 10;
-  }
-}
-
-class Explosion {
-  constructor(pos) {
-    this.pos = pos;
-    this.time = 0;
-    this.maxtime = 1000;
-  }
-  update() {
-    this.time += 1;
-  }
-}
-
-class Explosions {
-  constructor() {
-    this.list = {};
-    this.hitable = false;
-    this.hard = false;
-    this.id = 0;
-  }
-  add(explosion) {
-    this.list[this.id] = explosion;
-    this.id++;
-  }
-  delete(id) {
-    delete this.list[id];
+      this.id++;
+    this.list[this.id] = new gameobject[this.name](params);
+    this.hitable = this.list[this.id].hitable;
   }
   update() {
     for (let id in this.list) {
-      let explosion = this.list[id];
-      explosion.update();
-      if (explosion.time > explosion.maxtime) {
+      let obj = this.list[id];
+      obj.update(entities);
+      if (obj.health <= 0) {
         this.delete(id);
       }
     }
   }
+  delete(id) {
+    delete this.list[id];
+  }
+  static hit(obj,entities) {
+    for (let name in entities) {
+      if (entities[name].hitable && obj.hitentity(entities[name]))
+        return;
+    }
+  }
+
 }
 
 var express = require('express');
@@ -296,15 +224,22 @@ server.listen(5000, function () {
 
 let playernum = 0;
 let entities = {}
-entities['player'] = new Players();
-entities['projectile'] = new Projectiles();
-entities['planet'] = new Planets();
-entities['explosion'] = new Explosions();
+entities['player'] = new ObjectList('player');
+entities['projectile'] = new ObjectList('projectile');
+entities['planet'] = new ObjectList('planet');
+entities['explosion'] = new ObjectList('explosion');
+
+entities['planet'].add({
+  x: 0,
+  y: 0,
+  z: -700,
+  r: 300
+});
 
 io.on('connection', (socket) => {
   socket.on('new_player', () => {
     if (playernum < 6) {
-      entities['player'].add(new Player(socket.id));
+      entities['player'].add(socket.id);
       console.log('user ' + socket.id + ' connected');
       ++playernum;
     } else {
@@ -364,7 +299,7 @@ io.on('connection', (socket) => {
       }
       if (data.fire) {
         if (player.loadtime == 0) {
-          entities['projectile'].add(new Projectile(player));
+          entities['projectile'].add(player);
           player.loadtime = 20;
         }
       }

@@ -36,7 +36,7 @@ export const graphics = (function () {
 
     _CreateLights() {
       this.directionalLight = new THREE.DirectionalLight(0x808080, 3.0);
-      this.directionalLight.position.set(-100, -100, -100);
+      this.directionalLight.position.set(-100, -100, 100);
       this.directionalLight.target.position.set(0, 0, 0);
       this._scene.add(this.directionalLight);
   

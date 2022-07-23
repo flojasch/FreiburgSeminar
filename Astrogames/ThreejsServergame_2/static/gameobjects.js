@@ -70,7 +70,7 @@ export const objects = (function () {
             this.scene = params.scene;
             this.id = player.id;
             this.score = player.score;
-            this.lives = player.lives;
+            this.health = player.health;
             this.model = new THREE.Object3D();
             this.scene.add(this.model);
             this.setModel(player.model);
@@ -158,12 +158,12 @@ export const objects = (function () {
         }
 
         update(explosion) {
-            if (explosion.time == 1) {
+            if (explosion.health == 999) {
                 this.sound['bombsound'].play();
                 let origin = new THREE.Vector3(explosion.pos.x, explosion.pos.y, explosion.pos.z);
                 this.explode(origin);
             }
-            this.Update(explosion.time / 1000);
+            this.Update((1000-explosion.health) / 1000);
         }
 
         remove() {
