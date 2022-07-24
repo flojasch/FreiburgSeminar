@@ -51,10 +51,11 @@ export const gameobject = (function () {
   }
 
   class Player {
-    constructor(id) {
+    constructor(params) {
       this.health = 10;
       this.score = 0;
-      this.id = id;
+      this.id = params.id;
+      this.playerName = params.playerName;
       this.pos = new Vec(rand(), 0, rand());
       this.X = new Vec(1, 0, 0);
       this.Y = new Vec(0, 1, 0);

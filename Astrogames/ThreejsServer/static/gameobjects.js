@@ -9,6 +9,7 @@ import {
 import {
     math
 } from './math.js';
+
 export const objects = (function () {
 
     function transform(obj, Y, Z) {
@@ -64,6 +65,44 @@ export const objects = (function () {
         }
     }
 
+    class FloatingName {
+        constructor(player) {
+            this.model = player.model;
+            this.name = player.name;
+            this.Init_();
+        }
+
+        Destroy() {
+            this.element_ = null;
+        }
+
+        Init_() {
+            this.element_ = document.createElement('canvas');
+            this.context2d_ = this.element_.getContext('2d');
+            this.context2d_.canvas.width = 256;
+            this.context2d_.canvas.height = 128;
+            this.context2d_.fillStyle = '#FFF';
+            this.context2d_.font = "18pt Helvetica";
+            this.context2d_.shadowOffsetX = 3;
+            this.context2d_.shadowOffsetY = 3;
+            this.context2d_.shadowColor = "rgba(0,0,0,0.3)";
+            this.context2d_.shadowBlur = 4;
+            this.context2d_.textAlign = 'center';
+            this.context2d_.fillText(this.name, 128, 64);
+
+            const map = new THREE.CanvasTexture(this.context2d_.canvas);
+
+            this.sprite = new THREE.Sprite(
+                new THREE.SpriteMaterial({
+                    map: map,
+                    color: 0xffffff
+                }));
+            this.sprite.scale.set(6, 3, 1);
+            this.sprite.position.y += 1.5;
+            this.model.add(this.sprite);
+        }
+    };
+
     class Player {
         constructor(params) {
             let player = params.obj;
@@ -74,6 +113,8 @@ export const objects = (function () {
             this.model = new THREE.Object3D();
             this.scene.add(this.model);
             this.setModel(player.model);
+            this.name=player.playerName;
+            this.floatingName=new FloatingName(this);
         }
         setModel(name) {
             const loader = new GLTFLoader();
@@ -92,6 +133,7 @@ export const objects = (function () {
         }
         remove() {
             this.scene.remove(this.model);
+            this.floatingName.Destroy();
         }
 
     }
@@ -132,7 +174,7 @@ export const objects = (function () {
                 for (let j = 0; j < 2; ++j) {
                     let cyl = new THREE.Mesh(geometry, material);
                     cyl.rotation.x = -Math.PI / 2;
-                    cyl.position.set(-1.9+i * 3.5,-0.35+ j * 0.8, 0);
+                    cyl.position.set(-1.9 + i * 3.5, -0.35 + j * 0.8, 0);
                     this.obj.add(cyl);
                 }
             this.scene.add(this.obj);
@@ -149,7 +191,7 @@ export const objects = (function () {
 
     class Explosion {
         constructor(params) {
-            this.sound=params.sound;
+            this.sound = params.sound;
             this._particleSystem = new particles.ParticleSystem(
                 params.scene, {
                     texture: "static/images/explosion.png"
@@ -163,7 +205,7 @@ export const objects = (function () {
                 let origin = new THREE.Vector3(explosion.pos.x, explosion.pos.y, explosion.pos.z);
                 this.explode(origin);
             }
-            this.Update((1000-explosion.health) / 1000);
+            this.Update((1000 - explosion.health) / 1000);
         }
 
         remove() {

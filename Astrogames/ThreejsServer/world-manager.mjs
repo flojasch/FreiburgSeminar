@@ -14,7 +14,7 @@ export const worldmanager = (function () {
     }
     add(params) {
       if (this.isPlayer)
-        this.id = params;
+        this.id = params.id;
       else
         this.id++;
       const obj = new gameobject[this.name](params);

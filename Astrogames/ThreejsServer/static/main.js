@@ -16,7 +16,9 @@ import {
   controls
 } from './controls.js';
 
-class ObjectManager {
+
+
+class ObjectList {
   constructor(params) {
     this.list = {};
     this.name = params.name;
@@ -55,6 +57,27 @@ class ObjectManager {
   }
 }
 
+class WorldManager {
+  constructor(game) {
+    this.entities = {};
+    this.scene = game._scene;
+    this.sound = game.sound;
+  }
+  add(name) {
+    this.entities[name] = new ObjectList({
+      name: name,
+      scene: this.scene,
+      sound: this.sound,
+    });
+  }
+  update(data) {
+    for (let objname in this.entities) {
+      let entity = this.entities[objname];
+      entity.update(data[objname].list);
+    }
+  }
+}
+
 class BattleGame {
   constructor() {
     this.socket = io();
@@ -65,36 +88,32 @@ class BattleGame {
     this._camera = this.graphics.Camera;
     this._scene = this.graphics.Scene;
     this.sound = {};
-    this._entities = {};
-
+    this._LoadBackground();
     this._Initialize();
   }
 
   _Initialize() {
-    this._LoadBackground();
     this._SetSound();
-    let nameList = ['player', 'planet', 'explosion', 'projectile'];
-    for (let name of nameList) {
-      this._entities[name] = new ObjectManager({
-        name: name,
-        scene: this._scene,
-        sound: this.sound,
-      });
-    }
-    this.socket.emit('new_player');
+    this.world = new WorldManager(this);
+    this.world.add('player');
+    this.world.add('planet');
+    this.world.add('explosion');
+    this.world.add('projectile');
+    this._GetName();
+
     this._Socket();
   }
 
   _Socket() {
     this.socket.on('state', (data) => {
-      this._StepEntities(data);
+      this.world.update(data);
       this.controls.update();
 
       let player = data['player'].list[this.socket.id];
       if (player != undefined) {
         this.updateCamera(player);
       }
-      this.gamegui.Update(data['player'].list,this.socket.id);
+      this.gamegui.Update(data['player'].list, this.socket.id);
       this.graphics.Render();
     });
   }
@@ -112,12 +131,6 @@ class BattleGame {
     this._camera.position.set(cpos.x, cpos.y, cpos.z);
     this._camera.lookAt(clook.x, clook.y, clook.z);
     this._camera.up.set(Y.x, Y.y, Y.z);
-  }
-
-  _StepEntities(data) {
-    for (let name in this._entities) {
-      this._entities[name].update(data[name].list);
-    }
   }
 
   _SetSound() {
@@ -141,6 +154,27 @@ class BattleGame {
       'static/images/space-negz.jpg',
     ]);
     this._scene.background = texture;
+  }
+
+  _GetName() {
+    const text = document.createElement('div');
+    text.className = 'welcomeText';
+    text.innerText = 'Willkommen zum Astrobattle Royale. \n Gib hier deinen Namen ein.'
+    const welcomeDiv = document.createElement('div');
+    welcomeDiv.className = 'welcomeBox';
+    const input = document.createElement('input');
+    input.setAttribute('type', 'text');
+    welcomeDiv.appendChild(text);
+    welcomeDiv.appendChild(input);
+    document.body.appendChild(welcomeDiv);
+    input.addEventListener('keydown', (evt) => {
+      if (evt.keyCode === 13) {
+        evt.preventDefault();
+        let playerName = input.value;
+        this.socket.emit('new_player', playerName);
+        welcomeDiv.remove();
+      }
+    }, false);
   }
 }
 
