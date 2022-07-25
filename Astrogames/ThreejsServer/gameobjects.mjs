@@ -56,7 +56,7 @@ export const gameobject = (function () {
       this.score = 0;
       this.id = params.id;
       this.playerName = params.playerName;
-      this.pos = new Vec(rand(), 0, rand());
+      this.pos = new Vec(rand(), 5000, 10000+rand());
       this.X = new Vec(1, 0, 0);
       this.Y = new Vec(0, 1, 0);
       this.Z = new Vec(0, 0, 1);
@@ -133,6 +133,20 @@ export const gameobject = (function () {
     }
   }
 
+  class Terrain {
+    constructor(params) {
+      this.pos = new Vec(0, 0, 0);
+      this.r = Math.sqrt(3) *5050;
+      this.health = 100;
+      this.hitable = true;
+      this.name = 'terrain';
+      this.checkHit = false;
+    }
+    update() {
+      this.health=100;
+    }
+  }
+
   class Explosion {
     constructor(pos) {
       this.pos = pos;
@@ -151,5 +165,6 @@ export const gameobject = (function () {
     projectile: Projectile,
     planet: Planet,
     player: Player,
+    terrain: Terrain,
   };
 })();

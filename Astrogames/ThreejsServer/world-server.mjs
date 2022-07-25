@@ -8,17 +8,15 @@ export const worldserver = (() => {
     constructor(io) {
       this.playernum = 0;
       this.world = new worldmanager.WorldManager();
-      this.world.add('player');
-      this.world.add('projectile');
-      this.world.add('planet');
-      this.world.add('explosion');
+      
 
       this.world.entities['planet'].add({
         x: 0,
         y: 0,
-        z: -700,
-        r: 300
+        z: 0,
+        r: 5000
       });
+      //this.world.entities['terrain'].add({});
       this._SetSocket(io);
     }
 

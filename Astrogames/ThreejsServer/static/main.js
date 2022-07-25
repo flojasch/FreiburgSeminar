@@ -1,4 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
+import {
+  GLTFLoader
+} from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/loaders/GLTFLoader.js';
 
 import {
   objects
@@ -16,14 +19,13 @@ import {
   controls
 } from './controls.js';
 
-
-
 class ObjectList {
   constructor(params) {
     this.list = {};
     this.name = params.name;
     this.scene = params.scene;
     this.sound = params.sound;
+    this.camera = params.camera;
   }
   update(typeList) {
     this.delete(typeList);
@@ -51,6 +53,7 @@ class ObjectList {
           obj: typeList[id],
           scene: this.scene,
           sound: this.sound,
+          camera: this.camera,
         });
       }
     }
@@ -62,12 +65,19 @@ class WorldManager {
     this.entities = {};
     this.scene = game._scene;
     this.sound = game.sound;
+    this.camera = game._camera;
+    this.add('player');
+    this.add('planet');
+    this.add('terrain');
+    this.add('explosion');
+    this.add('projectile');
   }
   add(name) {
     this.entities[name] = new ObjectList({
       name: name,
       scene: this.scene,
       sound: this.sound,
+      camera: this.camera,
     });
   }
   update(data) {
@@ -88,17 +98,15 @@ class BattleGame {
     this._camera = this.graphics.Camera;
     this._scene = this.graphics.Scene;
     this.sound = {};
+
     this._LoadBackground();
     this._Initialize();
   }
 
   _Initialize() {
     this._SetSound();
+    this._SetModel('star-destroyer');
     this.world = new WorldManager(this);
-    this.world.add('player');
-    this.world.add('planet');
-    this.world.add('explosion');
-    this.world.add('projectile');
     this._GetName();
 
     this._Socket();
@@ -154,6 +162,17 @@ class BattleGame {
       'static/images/space-negz.jpg',
     ]);
     this._scene.background = texture;
+  }
+
+  _SetModel(name) {
+    const loader = new GLTFLoader();
+    const model = new THREE.Object3D();
+    this._scene.add(model);
+    loader.load('static/models/' + name + '/scene.gltf', (gltf) => {
+      model.add(gltf.scene);
+      gltf.scene.scale.set(20, 20, 20);
+      model.position.set(-1000, 5000, 9000);
+    });
   }
 
   _GetName() {

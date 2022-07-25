@@ -39,6 +39,11 @@ export const worldmanager = (function () {
   class WorldManager {
     constructor() {
       this.entities = {}
+      this.add('player');
+      this.add('projectile');
+      this.add('planet');
+      this.add('terrain');
+      this.add('explosion');
     }
     add(name) {
       this.entities[name] = new ObjectList({

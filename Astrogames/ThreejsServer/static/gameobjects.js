@@ -9,6 +9,9 @@ import {
 import {
     math
 } from './math.js';
+import {
+    quadtree
+  } from './quadtree.js';
 
 export const objects = (function () {
 
@@ -264,11 +267,94 @@ export const objects = (function () {
         }
     };
 
+    class Terrain {
+        constructor(params) {
+          this._terrainSize = 5000;
+          this._relHeight=0.01;
+          this.sides = [];
+          this.MakeSides(params);
+        }
+      
+        MakeSides(params) {
+          const group = new THREE.Group();
+          params.scene.add(group);
+      
+          let m;
+          const rotations = [];
+          //top
+          m = new THREE.Matrix4();
+          m.makeRotationX(-Math.PI / 2);
+          rotations.push({
+            m,
+            tx: -1,
+            ty: 0,
+          });
+      
+          m = new THREE.Matrix4();
+          rotations.push({
+            m,
+            tx: 0,
+            ty: 0
+          });
+      
+          m = new THREE.Matrix4();
+          m.makeRotationX(Math.PI / 2);
+          rotations.push({
+            m,
+            tx: 1,
+            ty: 0
+          });
+          //backside
+          m = new THREE.Matrix4();
+          m.makeRotationY(-Math.PI);
+          rotations.push({
+            m,
+            tx: 0,
+            ty: -2
+          });
+      
+          m = new THREE.Matrix4();
+          m.makeRotationY(Math.PI / 2);
+          rotations.push({
+            m,
+            tx: 0,
+            ty: 1
+          });
+      
+          m = new THREE.Matrix4();
+          m.makeRotationY(-Math.PI / 2);
+          rotations.push({
+            m,
+            tx: 0,
+            ty: -1
+          });
+      
+          for (let rot of rotations)
+            this.sides.push(new quadtree.QuadTree({
+              terrainSize: this._terrainSize,
+              relHeight: this._relHeight,
+              group: group,
+              camPos: params.camera.position,
+              matrix: rot,
+            }));
+        }
+      
+        update(terrain) {
+          for (let side of this.sides) {
+            side.Rebuild(side._root);
+            side.Update(side._root);
+          }
+        }
+        
+      }
+    
+
     return {
         explosion: Explosion,
         projectile: Projectile,
         planet: Planet,
         player: Player,
         Vec: Vec,
+        terrain: Terrain,
     };
 })();
