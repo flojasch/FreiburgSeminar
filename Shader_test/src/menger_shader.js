@@ -482,7 +482,7 @@ vec3 _ApplyFog(
     vec3 posWS = _ScreenToWorld(vec3(vUv, z));
     float dist = length(posWS - cameraPosition);
     vec3 diffuse = texture2D(tDiffuse, vUv).xyz;
-    vec3 lightDir = normalize(vec3(0., 0., -1.));
+    vec3 lightDir = normalize(vec3(0., 0., 1.));
     vec3 rd = normalize(posWS-cameraPosition);
     
     //Berechnung des Mengerschwamms
@@ -490,22 +490,30 @@ vec3 _ApplyFog(
     if(d < dist && d<MAX_DIST){ 
       vec3 p= cameraPosition+rd*d;   
       vec3 n=GetNormal(p);
-      float cosphi=dot(n,lightDir);
-      vec3 v=normalize(-lightDir+2.*cosphi*n);
       vec3 col=GetColor(p);
-      float po=15.;
-      float amb=0.1;
-      float t=pow(clamp(dot(v,-rd),0.,1.),po);
-      col = (1.-t)*(amb+(1.-amb)*cosphi)*col+t*vec3(1.);
-      t=shadow(p,lightDir,SURF_DIST*2.,MAX_DIST,4.);
-      col *=t;   
+      
+      //ambient light and light density mix caused by angle
+      //between source and normal
+      float cosphi=dot(n,lightDir);
+      float amb=.1;
+      col=mix(cosphi,1.,amb)*col;
+
+      //reflexion
+      //float po=15.;
+      //vec3 v=normalize(-lightDir+2.*cosphi*n);
+      //float ref=pow(clamp(dot(v,-rd),0.,1.),po);
+      //col =   mix(col,vec3(1.),ref);
+
+      //shadow
+      float shad=shadow(p,lightDir,SURF_DIST*2.,MAX_DIST,4.);
+      col =mix(vec3(.2)*col,col,shad);   
       diffuse = col;
     }
 
     //Berechnung der Atmosphere
-    float height = max(0.0, length(cameraPosition) - planetRadius);
-    diffuse = _ApplyFog(diffuse, dist, height, posWS, cameraPosition, rd, lightDir);
-    diffuse = ACESFilmicToneMapping(diffuse);
+    //float height = max(0.0, length(cameraPosition) - planetRadius);
+    //diffuse = _ApplyFog(diffuse, dist, height, posWS, cameraPosition, rd, lightDir);
+    //diffuse = ACESFilmicToneMapping(diffuse);
 
 
     out_FragColor.rgb = diffuse;
