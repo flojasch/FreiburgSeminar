@@ -204,6 +204,7 @@ export const objects = (function () {
 
         update(explosion) {
             if (explosion.health == 999) {
+                this.sound['bombsound'].isPlaying=false;
                 this.sound['bombsound'].play();
                 let origin = new THREE.Vector3(explosion.pos.x, explosion.pos.y, explosion.pos.z);
                 this.explode(origin);

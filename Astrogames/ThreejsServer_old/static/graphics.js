@@ -1,32 +1,48 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.112.1/build/three.module.js';
-import {WEBGL} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/WebGL.js';
+import {
+  WEBGL
+} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/WebGL.js';
 
-import {RenderPass} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/postprocessing/RenderPass.js';
-import {ShaderPass} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/postprocessing/ShaderPass.js';
-import {FXAAShader} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/shaders/FXAAShader.js';
-import {EffectComposer} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/postprocessing/EffectComposer.js';
+import {
+  RenderPass
+} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/postprocessing/RenderPass.js';
+import {
+  ShaderPass
+} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/postprocessing/ShaderPass.js';
+import {
+  FXAAShader
+} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/shaders/FXAAShader.js';
+import {
+  EffectComposer
+} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/postprocessing/EffectComposer.js';
 
-import {menger_shader} from './menger_shader.js';
+import {
+  menger_shader
+} from './menger_shader.js';
+import {
+  terrain_shader2
+} from './terrain_shader2.js';
 
-export const graphics = (function() {
+export const graphics = (function () {
 
   class _Graphics {
-    constructor(game) {
-    }
+    constructor(game) {}
 
-    Initialize(x,y,z) {
+    Initialize(x, y, z) {
       if (!WEBGL.isWebGL2Available()) {
         return false;
       }
 
       const canvas = document.createElement('canvas');
-      const context = canvas.getContext('webgl2', {alpha: false});
+      const context = canvas.getContext('webgl2', {
+        alpha: false
+      });
 
       this._threejs = new THREE.WebGLRenderer({
         canvas: canvas,
         context: context,
       });
-      
+
       this._threejs.setPixelRatio(window.devicePixelRatio);
       this._threejs.setSize(window.innerWidth, window.innerHeight);
       this._threejs.autoClear = false;
@@ -39,11 +55,11 @@ export const graphics = (function() {
       }, false);
 
       const fov = 60;
-      const aspect = window.innerWidth/window.innerHeight;
+      const aspect = window.innerWidth / window.innerHeight;
       const near = 0.1;
-      const far = 500000.0;
+      const far = 5000 * 200;
       this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-      
+
       this._camera.position.set(x, y, z);
 
       this._scene = new THREE.Scene();
@@ -69,30 +85,63 @@ export const graphics = (function() {
 
       this._threejs.setRenderTarget(this._target);
 
-      this._postCamera = new THREE.OrthographicCamera( - 1, 1, 1, - 1, 0, 1 );
-      this._depthPass = new THREE.ShaderMaterial( {
-        vertexShader: menger_shader.VS,
-        fragmentShader: menger_shader.PS,
+      this._postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+      const loader = new THREE.TextureLoader();
+      const texture = loader.load('static/resources/noise.png');
+
+      this._depthPass = new THREE.ShaderMaterial({
+        vertexShader: terrain_shader2.VS,
+        fragmentShader: terrain_shader2.PS,
         uniforms: {
-          cameraNear: { value: this.Camera.near },
-          cameraFar: { value: this.Camera.far },
-          cameraPosition: { value: this.Camera.position },
-          cameraForward: { value: null },
-          tDiffuse: { value: null },
-          tDepth: { value: null },
-          inverseProjection: { value: null },
-          inverseView: { value: null },
-          planetPosition: { value: null },
-          planetRadius: { value: null },
-          atmosphereRadius: { value: null },
-          iTime: { value: 0.0},
-          lightDir: { value: null},
+          cameraNear: {
+            value: this.Camera.near
+          },
+          cameraFar: {
+            value: this.Camera.far
+          },
+          cameraPosition: {
+            value: this.Camera.position
+          },
+          cameraForward: {
+            value: null
+          },
+          tDiffuse: {
+            value: null
+          },
+          tDepth: {
+            value: null
+          },
+          inverseProjection: {
+            value: null
+          },
+          inverseView: {
+            value: null
+          },
+          planetPosition: {
+            value: null
+          },
+          planetRadius: {
+            value: null
+          },
+          atmosphereRadius: {
+            value: null
+          },
+          iTime: {
+            value: 0.0
+          },
+          lightDir: {
+            value: null
+          },
+          iChannel0: {
+            value: texture
+          },
         }
-      } );
-      var postPlane = new THREE.PlaneBufferGeometry( 2, 2 );
-      var postQuad = new THREE.Mesh( postPlane, this._depthPass );
+      });
+      var postPlane = new THREE.PlaneBufferGeometry(2, 2);
+      var postQuad = new THREE.Mesh(postPlane, this._depthPass);
       this._postScene = new THREE.Scene();
-      this._postScene.add( postQuad );
+      this._postScene.add(postQuad);
 
       this._CreateLights();
 
@@ -100,13 +149,13 @@ export const graphics = (function() {
     }
 
     _CreateLights() {
-      this.lightDir=new THREE.Vector3(0,0.6,-0.8);
+      this.lightDir = new THREE.Vector3(0, 0.6, -0.8);
       this.lightDir.normalize();
       this.directionalLight = new THREE.DirectionalLight(0x808080, 1.0);
-      this.directionalLight.position.set(-this.lightDir.x,-this.lightDir.y,-this.lightDir.z);
+      this.directionalLight.position.set(-this.lightDir.x, -this.lightDir.y, -this.lightDir.z);
       this.directionalLight.target.position.set(0, 0, 0);
       this._scene.add(this.directionalLight);
-  
+
       this.ambientlight = new THREE.AmbientLight(0x808080, 0.5);
       this._scene.add(this.ambientlight);
     }
@@ -132,8 +181,8 @@ export const graphics = (function() {
 
       this._threejs.clear();
       this._threejs.render(this._scene, this._camera);
-      
-      this._threejs.setRenderTarget( null );
+
+      this._threejs.setRenderTarget(null);
 
       const forward = new THREE.Vector3();
       this._camera.getWorldDirection(forward);
@@ -147,13 +196,13 @@ export const graphics = (function() {
       this._depthPass.uniforms.cameraPosition.value = this._camera.position;
       this._depthPass.uniforms.cameraForward.value = forward;
       this._depthPass.uniforms.planetPosition.value = new THREE.Vector3(0, 0, 0);
-      this._depthPass.uniforms.planetRadius.value = 5000.0*Math.sqrt(3);
+      this._depthPass.uniforms.planetRadius.value = 5000.0 * Math.sqrt(3);
       this._depthPass.uniforms.atmosphereRadius.value = 10000.0;
       this._depthPass.uniformsNeedUpdate = true;
-      this._depthPass.uniforms.iTime.value +=timeInSeconds;
-      this._depthPass.uniforms.lightDir.value=this.lightDir;
+      this._depthPass.uniforms.iTime.value += timeInSeconds;
+      this._depthPass.uniforms.lightDir.value = this.lightDir;
 
-      this._threejs.render( this._postScene, this._postCamera );
+      this._threejs.render(this._postScene, this._postCamera);
 
     }
   }

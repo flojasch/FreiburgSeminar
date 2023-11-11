@@ -1,4 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import {
+  WEBGL
+} from 'https://cdn.jsdelivr.net/npm/three@0.112.1/examples/jsm/WebGL.js';
 
 import {
   GLTFLoader
@@ -14,14 +17,9 @@ import {
   particles
 } from './particles.js';
 import {
-  menger
-} from './menger.js';
-import {
   quadtree
 } from './quadtree.js';
-import {
-  sky
-} from './sky.js';
+
 
 
 
@@ -181,7 +179,7 @@ class ExplodeParticles {
   get Radius() {
     return -1; //kann nicht getroffen werden
   }
-};
+}
 
 class PlayerEntity {
   constructor(game) {
@@ -323,26 +321,104 @@ class BlasterSystem {
 
 }
 
-class BattleGame {
-  constructor() {
-    this._threejs = new THREE.WebGLRenderer({
-      antialias: true,
+class Graphics {
+  constructor(x,y,z) {
+    if (!WEBGL.isWebGL2Available()) {
+      return false;
+    }
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('webgl2', {
+      alpha: false
     });
 
+    this._threejs = new THREE.WebGLRenderer({
+      canvas: canvas,
+      context: context,
+      antialias: true,
+    });
     this._threejs.setPixelRatio(window.devicePixelRatio);
-    this._width = window.innerWidth;
-    this._height = window.innerHeight;
-    this._threejs.setSize(this._width, this._height);
-
-    document.body.appendChild(this._threejs.domElement);
+    this._threejs.setSize(window.innerWidth, window.innerHeight);
+    const target = document.getElementById('target');
+    target.appendChild(this._threejs.domElement);
 
     window.addEventListener('resize', () => {
       this._OnWindowResize();
     }, false);
+
     this._scene = new THREE.Scene();
+    this._CreateCamera(x,y,z);
+    this._CreateLights();
+  }
+
+  _CreateCamera(x,y,z){
+    this.scale = 200;
+    const fov = 60;
+    const aspect = window.innerWidth / window.innerHeight;
+    const near = 0.1;
+    const far = this.scale * 5000;
+    this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    this._camera.position.set(x * this.scale, y * this.scale, z * this.scale);
+    this._scene.add(this._camera);
+  }
+
+  _CreateLights() {
+    let light = new THREE.DirectionalLight(0x808080, 1, 100);
+    light.position.set(-1, 1, -1);
+    light.target.position.set(0, 0, 0);
+    light.castShadow = false;
+    this._scene.add(light);
+
+    let amblight = new THREE.AmbientLight(0x808080, 0.5);
+    this._scene.add(amblight);
+  }
+
+  _OnWindowResize() {
+    this._camera.aspect = window.innerWidth / window.innerHeight;
+    this._camera.updateProjectionMatrix();
+    this._threejs.setSize(window.innerWidth, window.innerHeight);
+    this._composer.setSize(window.innerWidth, window.innerHeight);
+    this._target.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  get Scene() {
+    return this._scene;
+  }
+
+  get Camera() {
+    return this._camera;
+  }
+
+  Render(timeInSeconds) {
+    this._threejs.render(this._scene, this._camera);
+
+  }
+
+}
+
+class BattleGame {
+  constructor() {
+    const x = 1100;
+    const y = 110;
+    const z = 0;
+
+    this._graphics = new Graphics(x,y,z);
+    this._scene = this._graphics._scene;
+    this.scale = this._graphics.scale;
+    this._camera = this._graphics.Camera;
+
+    this._previousRAF = null;
+    this._minFrameTime = 1.0 / 10.0;
+
     this._entities = {};
     this._model = new THREE.Object3D();
-    this._Initialize();
+    this._LoadBackground();
+    this._SetSound();
+    this._CreatePlayer();
+
+    this._entities['_explosionSystem'] = new ExplodeParticles(this);
+    this._entities['_blaster'] = new Blaster(this);
+    
     this._RAF();
   }
 
@@ -363,49 +439,10 @@ class BattleGame {
   }
 
   _Render(timeInMS) {
-    const timeInSeconds = timeInMS * 0.001;
-
+    const timeInSeconds = Math.min(timeInMS * 0.001, this._minFrameTime);
     this._StepEntities(timeInSeconds);
-    this._threejs.render(this._scene, this._camera);
-
+    this._graphics.Render(timeInSeconds);
     this._RAF();
-  }
-
-  _Initialize() {
-    this._terrainSize=5000;
-    this._SetCamera();
-    this._LoadBackground();
-    this._SetLight();
-    this._SetSound();
-    this._CreatePlayer();
-
-
-    // this._entities['_terrain'] = new Terrain({
-    //   scene: this._scene,
-    //   camPos: this._camera.position,
-    //   terrainSize: this._terrainSize,
-    // });
-    
-    // this._entities['_sky'] = new sky.TerrainSky({
-    //   camPos: this._camera.position,
-    //   scene: this._scene,
-    //   terrainSize: this._terrainSize,
-    // });
-
-
-    this._entities['_explosionSystem'] = new ExplodeParticles(this);
-    this._entities['_blaster'] = new Blaster(this);
-    this._entities['_menger']=new menger.Menger(this._camera);
-  }
-
-  _SetCamera() {
-    const fov = 75;
-    const aspect = this._width / this._height;
-    const near = 0.1;
-    const far = 10000;
-    this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camera.position.set(-200, -300, 200);
-    this._scene.add(this._camera);
   }
 
   _SetSound() {
@@ -421,18 +458,6 @@ class BattleGame {
     audioLoader.load('sounds/bomb.wav', (buffer) => {
       this._bombsound.setBuffer(buffer);
     });
-  }
-
-  _SetLight() {
-    let light = new THREE.DirectionalLight(0x808080, 1.0);
-    light.position.set(-100, 100, -100);
-    light.target.position.set(0, 0, 0);
-    this._scene.add(light);
-
-    light = new THREE.AmbientLight(0x808080, 0.5);
-    this._scene.add(light);
-
-
   }
 
   _CreatePlayer() {
@@ -460,14 +485,6 @@ class BattleGame {
       './images/space-negz.jpg',
     ]);
     this._scene.background = texture;
-  }
-
-  _OnWindowResize() {
-    this._width = window.innerWidth;
-    this._height = window.innerHeight;
-    this._camera.aspect = this._width / this._height;
-    this._camera.updateProjectionMatrix();
-    this._threejs.setSize(this._width, this._height);
   }
 }
 

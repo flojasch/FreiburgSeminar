@@ -64,6 +64,7 @@ export const controls = (function () {
           break;
         case 32: //space
           this._move.fire = true;
+          this._lasersound.isPlaying=false;
           this._lasersound.play();
           break;
       }
